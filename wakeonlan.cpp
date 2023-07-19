@@ -159,7 +159,7 @@ int sendDiscoverypackaged()
             //printf("received discovery packaged: %s",buffer);
         }
         
-    }while(send >=0 && receive >=0);
+    }while(send <0 && receive <0);
     
     return 0;
 }
