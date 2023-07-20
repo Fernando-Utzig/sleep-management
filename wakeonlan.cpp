@@ -159,7 +159,7 @@ int sendDiscoverypackaged()
             //printf("received discovery packaged: %s",buffer);
         }
         
-    }while(send <0 && receive <0);
+    }while(send <0 && receive <0)
     
     return 0;
 }
@@ -277,7 +277,7 @@ public:
     }
 
 
-    void    interfaceThread(void *arg) {
+    void interfaceThread(void *arg) {
         std::string command;
         std::cout << "Digite o comando: " << std::endl;
 
@@ -313,9 +313,12 @@ int main(int argc, char *argv[]){
 
     pthread_t discoveryThreadId, interfaceThreadId, monitoringThreadId, managementThreadId;
 
+    interface_subservice interface;
+    discovery_subservice discovery;
+    management_subservice management;
+
     if (argc > 1 && strcmp(argv[1], "manager") == 0) {
         isManager = true;
-        discovery_subservice discovery;
         std::cout << "Estação iniciada como Manager\n" << std::endl;
         pthread_create(&discoveryThreadId, NULL, discoveryThread, NULL);
         while(1)
@@ -324,22 +327,19 @@ int main(int argc, char *argv[]){
         }
     } else {
         std::cout << "Estação iniciada como Participante\n" << std::endl;
-            std::string hostname = "MyComputer";
-            std::string mac = "AA:BB:CC:DD:EE:FF";
-            std::string ip = "192.168.1.100";
-            bool is_awaken = true;
-            sendDiscoverypackaged();
-            // Adicionar o participante na tabela
-            management_subservice management;
-            management.AddParticipantToTable(hostname, mac, ip, is_awaken);
-
-            // Mostrar participantes
-            interface_subservice interface;
-
-            interface.displayParticipants();
+        sendDiscoverypackaged();    
     }
+     // Adicionar na tabela o novo participante
+    char hostname[256];
+    gethostname(hostname, sizeof(hostname));
+    bool is_awaken = true;
+    std::string mac = "AA:BB:CC:DD:EE:FF";
+    std::string ip = "192.168.1.100";
 
-    // Adicionar na tabela o novo participante
-    //
+    // Adicionar o participante na tabela
+    management.AddParticipantToTable(hostname, mac, ip, is_awaken);
+
+    // Mostrar participantes e interagir com o usuário
+    interface.displayParticipants();
  
 };
