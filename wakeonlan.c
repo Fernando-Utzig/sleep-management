@@ -9,6 +9,7 @@
 #include <netdb.h>
 #include "participants.h"
 #include "discovery.h"
+#include "monitoring.h"
 
 
 
@@ -99,20 +100,19 @@ int main(int argc, char *argv[]){
 
         }
     } else {
+        int is_awaken = 1;
+        if(sendDiscoverypackaged(&ManagerSock) == -1)
+        {
+            printf("\nFailed to discover Manager, Closing");
+            exit(1);
+        }
+        pthread_create(&monitoringThreadId, NULL, ParticipantMonitoringThread, &ManagerSock);
+        
+        while(1)
+        {
 
-            int is_awaken = 1;
-            if(sendDiscoverypackaged(&ManagerSock) == -1)
-            {
-                printf("\nFailed to discover Manager, Closing");
-                exit(1);
-            }
-            // Adicionar o participante na tabela
-
-
-            // Mostrar participantes
-            
-
-            displayParticipants();
+        }
+        displayParticipants();
     }
 
     // Adicionar na tabela o novo participante

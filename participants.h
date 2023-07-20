@@ -16,6 +16,8 @@ struct ParticipantData {
 
 Participant* ParticipantsTable[TABLE_SIZE];
 pthread_mutex_t participantsMutex;
+Participant myself;
+pthread_mutex_t myselfMutex;
 int AddParticipantToTable(char* Message,int message_lenght);
 unsigned long hash(char *mac);
 void init_participantTable(void);

@@ -51,13 +51,17 @@ Participant *Create_Participant(char* Message,int message_lenght)
     int ip_index;
     int hostname_index;
     mac_index = get_index(Message,message_lenght);
-    fprintf(stderr,"ip_index bate em %c\n",Message[mac_index]);
     fprintf(stderr,"i eh = %d a mensagem é = %s\n", mac_index,Message);
+    fprintf(stderr,"mac_index=%d bate em %c\n",mac_index,Message[mac_index]);
     copystring(new_participant->MAC,Message,mac_index);
-    ip_index = get_index(&Message[mac_index],message_lenght-mac_index);
-    copystring(new_participant->Hostname,Message,mac_index);
+    hostname_index = get_index(&Message[mac_index+1],message_lenght-mac_index)+mac_index+1;
+    fprintf(stderr,"ip_index=%d bate em %c\n",hostname_index,Message[hostname_index]);
+    copystring(new_participant->Hostname,&Message[mac_index+1],hostname_index);
+    ip_index = get_index(&Message[hostname_index+1],message_lenght-hostname_index);
+    copystring(new_participant->ip_address,&Message[hostname_index+1],ip_index);
     new_participant->is_awaken=1;
     new_participant->next=NULL;
+    printParticipant(new_participant);
     return new_participant;
 }
 
@@ -95,8 +99,6 @@ int AddParticipantToTable(char* Message,int message_lenght)
         return -1;
     }
     int computed_hash;
-    fprintf(stderr,"deu erro foi?\n");
-    printf("kkkkk\n");
     Participant* new_participant = Create_Participant(Message,message_lenght);
     computed_hash=hash(new_participant->MAC);
     fprintf(stderr,"computed_hash = %d",computed_hash);

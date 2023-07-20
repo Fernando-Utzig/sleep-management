@@ -10,6 +10,7 @@
 #include <string.h>
 #include <netdb.h>
 #include "participants.h"
+#include <arpa/inet.h>
 
 #define PORT 4000
 #define BUFFER_SIZE 1024

@@ -40,13 +40,13 @@ int createSocket(int port, char serverName[]) {
             close(sockfd);
             exit(EXIT_FAILURE);
         }
-    printf("Socket id = %d",sockfd);
-    printf("\tDiscovery Socket Created\n");
+    fprintf(stderr,"Socket id = %d",sockfd);
+    fprintf(stderr,"\tDiscovery Socket Created\n");
     return sockfd;
 }
 
 void *discoveryThread(void *arg) {
-    printf("Starting Discovery\n");
+    fprintf(stderr,"Starting Discovery\n");
     int sockfd = createSocket(PORT,NULL);
     struct sockaddr_in clientAddr;
     char buffer[BUFFER_SIZE];
@@ -68,6 +68,7 @@ void *discoveryThread(void *arg) {
                 send_ret = sendto(sockfd, "You have been added Succesfully\n", strlen("You have been added Sucessfuly\n"), 0,(struct sockaddr *) &clientAddr, sizeof(struct sockaddr));
             fprintf(stderr,"send_ret = %d",send_ret);
         }
+        fflush(stderr);
     }
 }
 
@@ -75,6 +76,8 @@ int sendDiscoverypackaged(struct sockaddr_in *Manageraddress)
 {
     unsigned int length;
     struct sockaddr_in serveraddress;
+    struct hostent *myhost;
+    char *myip;
     FILE * eth0 = fopen("/sys/class/net/eth0/address", "r");
     char MyMac[20];
 	if(eth0 == NULL)
@@ -95,13 +98,24 @@ int sendDiscoverypackaged(struct sockaddr_in *Manageraddress)
     {
         printf("\nMY HOSTNAME READ FAILED");
         strcpy(MyHostName,"MyDefaultaHostname");
+        myip = "10.1.1.1";
+    }
+    else
+    {
+        myhost = gethostbyname(MyHostName);
+        myip = inet_ntoa(*((struct in_addr*)
+                        myhost->h_addr_list[0]));
     }
 	char sendMessage[BUFFER_SIZE];
+    
     fprintf(stderr,"\nMyMac is =%s",MyMac);
     strcpy(sendMessage,MyMac);
     strcat(sendMessage, ",");
     fprintf(stderr,"\nhostname is = %s",MyHostName);
     strcat(sendMessage, MyHostName);
+    fprintf(stderr,"\nmyip is = %s",myip);
+    strcat(sendMessage, ",");
+    strcat(sendMessage, myip);
     fprintf(stderr,"\nsendmessage = %s", sendMessage);
     char buffer[BUFFER_SIZE];
     char serv_addr[] = "255.255.255.255"; // MY BROADCAST IP
@@ -123,6 +137,8 @@ int sendDiscoverypackaged(struct sockaddr_in *Manageraddress)
 	serveraddress.sin_addr = *((struct in_addr *)server->h_addr);
     receive = 0; //Mudar para receber confirmacao
     int tries =0;
+    struct in_addr ip_addr;
+    char *some_addr;
     do{
         fprintf(stderr,"\nsending discovery packaged");
         send = sendto(sockfd, sendMessage, strlen(sendMessage), 0, (const struct sockaddr *) &serveraddress, sizeof(struct sockaddr_in));
@@ -134,6 +150,8 @@ int sendDiscoverypackaged(struct sockaddr_in *Manageraddress)
             receive = recvfrom(sockfd, buffer, 256, 0, (struct sockaddr *) Manageraddress, &length);
             fprintf(stderr,"\nreceive value = %d",receive);
             fprintf(stderr,"\nreceived discovery packaged: %s",buffer);
+            fprintf(stderr,"\n Manager ip(in integer)= %u",Manageraddress->sin_addr.s_addr);
+            fprintf(stderr,"\n Manager ip(in string)= %s",inet_ntoa(Manageraddress->sin_addr));
         }
         tries++;
         tv.tv_usec = 0;

@@ -1,5 +1,5 @@
-wakeonlan: participants.o wakeonlan.c discovery.o
-	gcc participants.o discovery.o wakeonlan.c -o wakeonlan  -lpthread
+wakeonlan: participants.o wakeonlan.c discovery.o monitoring.o
+	gcc participants.o discovery.o monitoring.o wakeonlan.c -o  wakeonlan  -lpthread
 
 participants.o: participants.c
 	gcc -c participants.c
@@ -7,5 +7,7 @@ participants.o: participants.c
 discovery.o: discovery.c
 	gcc -c discovery.c
 
+monitoring.o: monitoring.c
+	gcc -c monitoring.c
 clean:
-	rm participants.o discovery.o
+	rm participants.o discovery.o monitoring.o
