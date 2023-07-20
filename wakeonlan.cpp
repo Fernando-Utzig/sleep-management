@@ -9,21 +9,17 @@
 #include <netdb.h>
 #include <iostream>
 #include <vector>
-
+#include "strucks.cpp"
 using namespace std;
 
 #define PORT 4000
 #define PORT_CLIENT 4021
 #define BUFFER_SIZE 1024
 #define MONITORING_PORT 8889
-
+#define CONFIRMATION_TRIES 3
+struct sockaddr_in ManagerSock;
 // Struct que armazena os dados de cada participante
-struct ParticipantData {
-    string Hostname;
-    string MAC;
-    string ip_address;
-    bool is_awaken;
-};
+
 
 // A tabela é representada por uma lista de structs
 vector<ParticipantData> ParticipantsTable;
@@ -39,10 +35,6 @@ pthread_mutex_t tableMutex = PTHREAD_MUTEX_INITIALIZER;
 
 // Executado pelo manager
 // Identifica quais computadores passaram a executar o programa, recebendo e respondendo pacotes em broadcast
-class discovery_subservice{
-
-    
-};
 
 int createSocket(int port, char serverName[]) {
         int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -90,16 +82,13 @@ int createSocket(int port, char serverName[]) {
 void *discoveryThread(void *arg) {
         std::cout << "Starting Discovery\n" << std::endl;
         int sockfd = createSocket(PORT,NULL);
+        SMetaData *metadata = (SMetaData *) arg;
         struct sockaddr_in clientAddr;
         char buffer[BUFFER_SIZE];
-        printf("before while\n");
         socklen_t len = sizeof(clientAddr);
+        int send_ret;
         while (1) {
-            std::cout << "while Discovery\n" << std::endl;
-            printf("in while\n");
             memset(buffer, 0, BUFFER_SIZE);
-            printf("after memset\n");
-            std::cout << "while Discovery\n" << std::endl;
             int n = recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&clientAddr, &len);
             printf(" n= %d",n);
             std::cout << "no n \n" << std::endl;
@@ -107,158 +96,86 @@ void *discoveryThread(void *arg) {
                 std::cout << "received packaged" << std::endl;
                 buffer[n] = '\0';
                 printf("message = %s",buffer);
-                std::cout << "\nmessage^\n" << std::endl;
                 // Extract the hostname from the buffer
                 char* hostname = strtok(buffer, ",");
                 if (hostname != NULL) {
                     // Extract the status from the buffer
                     printf("hostname received = %s\n",hostname);
-                    char* status = strtok(NULL, ",");
-                    if (status != NULL) {
-                        int i;
-                        for (i = 0; i < ParticipantsTable.size(); i++) {
-                            ParticipantData* participant = &ParticipantsTable[i];
-                        }
-                    }
                 }
-                
+                send_ret = sendto(sockfd, "You have been added\n", 17, 0,(struct sockaddr *) &clientAddr, sizeof(struct sockaddr));
+                printf("send_ret = %d",send_ret);
             }
         }
     }
 
-int sendDiscoverypackaged()
+int sendDiscoverypackaged(struct sockaddr_in *Manageraddress)
 {
     unsigned int length;
-    
-    char MyMac[] = "AA:BB:CC:DD:EE:FF";
+    struct sockaddr_in serveraddress;
+    FILE * eth0 = fopen("/sys/class/net/eth0/address", "r");
+	if(eth0 == NULL)
+	{
+		printf("MY MAC READ FAILED");
+	}
+	char MyMac[19];
+	fgets(MyMac, 19, eth0);
     char buffer[BUFFER_SIZE];
     char serv_addr[] = "255.255.255.255"; // MY BROADCAST IP
     int send,receive;
     struct hostent *server;
     int sockfd = createSocket(PORT_CLIENT,serv_addr);
     length = sizeof(struct sockaddr_in);
-    struct sockaddr_in serveraddress;
     serveraddress.sin_family = AF_INET;     
 	serveraddress.sin_port = htons(PORT);    
     server = gethostbyname(serv_addr);
+    struct timeval tv;
+    tv.tv_sec = 3;
+    tv.tv_usec = 0;
+    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     if(server == NULL)
     {
         printf("problem finding master server");
     }
 	serveraddress.sin_addr = *((struct in_addr *)server->h_addr);
     receive = 0; //Mudar para receber confirmacao
+    int tries =0;
     do{
-        printf("sending discovery packaged");
+        printf("\nsending discovery packaged");
         send = sendto(sockfd, MyMac, strlen(MyMac), 0, (const struct sockaddr *) &serveraddress, sizeof(struct sockaddr_in));
+        printf("\n send value = %d",receive);
         if (send < 0) 
             printf("\nERROR sendto: %d \n",send);
         else
         {
-             //Mudar para receber confirmacao
-            //receive = recvfrom(sockfd, buffer, 256, 0, (struct sockaddr *) &serveraddress, &length);
-            //printf("received discovery packaged: %s",buffer);
+            receive = recvfrom(sockfd, buffer, 256, 0, (struct sockaddr *) Manageraddress, &length);
+            printf("\nreceive value = %d",receive);
+            printf("\nreceived discovery packaged: %s",buffer);
         }
+        tries++;
+        tv.tv_usec = 0;
         
-    }while(send <0 && receive <0);
-    
+    }while((send <0 && receive <0)|| tries <CONFIRMATION_TRIES);
+    if(tries >CONFIRMATION_TRIES)
+    {
+        return -1;
+    }
     return 0;
 }
 // Executado pelo manager
 // Monitora o status dos computadores a partir do envio de pacotes
-class monitoring_subservice{
-public:
-    // void* monitoringService(void* arg) {
-    //     discovery_subservice discovery;
-    //     int sockfd = discovery.createSocket(MONITORING_PORT);
-    //     struct sockaddr_in clientAddr;
-    //     char buffer[BUFFER_SIZE];
 
-    //     while (1) {
-    //         // Send sleep status request to participants
-    //         int i;
-    //         for (i = 0; i < ParticipantsTable.size(); i++) {
-    //             // Skip if participant is the manager
-    //             if (ParticipantsTable[i].Hostname == "manager")
-    //                 continue;
+void* monitoringService(void* arg) {
+    int sockfd = createSocket(MONITORING_PORT,NULL);
+    struct sockaddr_in clientAddr;
+    char buffer[BUFFER_SIZE];
+    while (1) {
 
-    //             // Prepare sleep status request packet
-    //             char request[BUFFER_SIZE];
-    //             snprintf(request, BUFFER_SIZE, "sleep_status_request,%s", ParticipantsTable[i].Hostname);
-
-    //             // Create socket address for participant
-    //             struct sockaddr_in participantAddr;
-    //             memset(&participantAddr, 0, sizeof(participantAddr));
-    //             participantAddr.sin_family = AF_INET;
-    //             participantAddr.sin_port = htons(MONITORING_PORT);
-    //             // participantAddr.sin_addr.s_addr = inet_addr(ParticipantsTable[i].ip_address);
-
-    //             // Send sleep status request packet to participant
-    //             sendto(sockfd, (const char*)request, strlen(request), MSG_CONFIRM, (const struct sockaddr*)&participantAddr, sizeof(participantAddr));
-    //         }
-
-    //         sleep(5); // Wait for sleep status responses
-    //     }
-    // }
-
-};
-
-
+    }
+}
 
 // Executado pelo manager
 // Mantém uma lista dos computadores participantes com o status de cada um
-class management_subservice{
-public:
 
-    void AddParticipantToTable(string hostname, string mac, string ip, bool is_awaken){
-        
-        ParticipantData new_participant;
-        new_participant.Hostname = hostname;
-        new_participant.MAC = mac;
-        new_participant.ip_address = ip;
-        new_participant.is_awaken = is_awaken;
-
-        try{
-            // Adiciona participante no final da lista
-            ParticipantsTable.push_back(new_participant);
-            std::cout << "Participant " << hostname <<" added to table\n";
-        }
-        catch(std::exception& e){
-            std::cout << "Error adding participant to table: \n" << e.what();
-        }
-    }
-    
-    void UpdateParticipantStatus(string hostname, bool is_awaken)
-    {
-        for (int i; i<ParticipantsTable.size(); i++){
-            if (ParticipantsTable[i].Hostname == hostname){
-                ParticipantsTable[i].is_awaken = is_awaken;
-
-                break; // Se encontrou, encerra o loop antes
-            }
-        }
-    }
-
-    void RemoveParticipantFromTable(string hostname)
-    {
-        int indice;
-        for (int i; i<ParticipantsTable.size(); i++){
-            if (ParticipantsTable[i].Hostname == hostname){
-                indice = i;
-                
-                break; // Se encontrou, encerra o loop antes
-            }
-        }
-
-        try{
-            // Exclui participante pelo seu índice na lista
-            ParticipantsTable.erase(ParticipantsTable.begin() + indice);
-            std::cout << "Participant " << hostname <<" removed from table";
-        }
-        catch(std::exception& e){
-            std::cout << "Error removing participant from table: " << e.what();
-        }
-    }
-};
 
 // Executado pelo manager e pelo participante
 // Exibe informações dos computadores e permite input dos usuários
@@ -312,26 +229,28 @@ public:
 int main(int argc, char *argv[]){
 
     pthread_t discoveryThreadId, interfaceThreadId, monitoringThreadId, managementThreadId;
-
+    SMetaData *metadata = (SMetaData *)malloc(sizeof(SMetaData));
     if (argc > 1 && strcmp(argv[1], "manager") == 0) {
         isManager = true;
-        discovery_subservice discovery;
         std::cout << "Estação iniciada como Manager\n" << std::endl;
-        pthread_create(&discoveryThreadId, NULL, discoveryThread, NULL);
+        pthread_create(&discoveryThreadId, NULL, discoveryThread, metadata);
         while(1)
         {
 
         }
     } else {
-        std::cout << "Estação iniciada como Participante\n" << std::endl;
+            std::cout << "Estação iniciada como Participante\n" << std::endl;
             std::string hostname = "MyComputer";
             std::string mac = "AA:BB:CC:DD:EE:FF";
             std::string ip = "192.168.1.100";
             bool is_awaken = true;
-            sendDiscoverypackaged();
+            if(sendDiscoverypackaged(&ManagerSock) == -1)
+            {
+                printf("\nFailed to discover Manager, Closing");
+                exit(1);
+            }
             // Adicionar o participante na tabela
-            management_subservice management;
-            management.AddParticipantToTable(hostname, mac, ip, is_awaken);
+
 
             // Mostrar participantes
             interface_subservice interface;
