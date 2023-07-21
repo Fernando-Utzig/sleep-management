@@ -1,9 +1,19 @@
 #ifndef C_PARTICIPANTS
 #define C_PARTICIPANTS
+#define TABLE_SIZE 997
 
 #include "participants.h"
 
+Participant* ParticipantsTable[TABLE_SIZE];
+pthread_mutex_t participantsMutex;
+Participant myself;
+pthread_mutex_t myselfMutex;
 
+void printAllParticipants() {
+    for (int i=0; i<TABLE_SIZE; i++) {
+        printParticipant(ParticipantsTable[i]);
+    }
+}
 
 unsigned long hash(char *mac){
     unsigned long sum =0;

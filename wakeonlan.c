@@ -57,9 +57,7 @@ void* monitoringService(void* arg) {
 void displayParticipants() {
     pthread_mutex_lock(&tableMutex);
     printf("Participants:");
-    for (int i=0; i<TABLE_SIZE; i++) {
-        printParticipant(ParticipantsTable[i]);
-    }
+    printAllParticipants();
     pthread_mutex_unlock(&tableMutex);
 }
 
