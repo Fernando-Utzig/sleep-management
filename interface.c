@@ -2,25 +2,30 @@
 #define C_INTERFACE
 #include "interface.h"
 
+pthread_mutex_t tableMutex = PTHREAD_MUTEX_INITIALIZER;
+
+void displayParticipants() {
+    pthread_mutex_lock(&tableMutex);
+    printf("Participants:");
+    printAllParticipants();
+    pthread_mutex_unlock(&tableMutex);
+}
+
 void *interfaceThread(void *arg) {
     char command[100];
-    while (1) {
+    // Função para exibir a lista de participantes na tela
+    displayParticipants();
         
-        scanf("Commands: EXIT and WAKEUP:\n %s",command);
-        if (command == "EXIT") {
-            if (isManager) {
-                pthread_mutex_unlock(&participantsRWLock);
-                pthread_mutex_unlock(&participantsRWLock);
-            } else {
-                // Enviar pacote de descoberta especial para indicar saída do serviço
-            }
-            break;
-        } else if (command == "WAKEUP") {
-            // Enviar comando de WAKEUP (pacote WoL) para a estação especificada
-        } else {
-            printf("Comando inválido.");
-        }
+    scanf("Commands: EXIT and WAKEUP:\n %s",command);
+    if (command == "EXIT") {
+        printf("exit");
+    } else if (command == "WAKEUP") {
+        // Enviar comando de WAKEUP (pacote WoL) para a estação especificada
+    } else {
+        printf("Comando inválido.");
     }
 }
+
+
 
 #endif
