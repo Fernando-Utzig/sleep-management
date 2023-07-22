@@ -10,20 +10,16 @@
 #include "participants.h"
 #include "discovery.h"
 #include "monitoring.h"
-
-
-
+#include "interface.h"
 
 #define MONITORING_PORT 8889
-
 #define PARTICIPANT_TABLE_SIZE 64
+
 struct sockaddr_in ManagerSock;
-// Struct que armazena os dados de cada participante
 
 // Variáveis globais
 int isManager = 0;
 int numParticipants = 0;
-
 
 pthread_mutex_t  participantsRWLock;
 pthread_mutex_t tableMutex = PTHREAD_MUTEX_INITIALIZER;
@@ -92,6 +88,7 @@ int main(int argc, char *argv[]){
         isManager = 1;
         printf("Estação iniciada como Manager\n");
         pthread_create(&discoveryThreadId, NULL, discoveryThread, NULL);
+        pthread_create(&interfaceThreadId, NULL, interfaceThread, NULL);
         while(1)
         {
             fgets(read,1,stdin);
@@ -106,15 +103,10 @@ int main(int argc, char *argv[]){
             exit(1);
         }
         pthread_create(&monitoringThreadId, NULL, ParticipantMonitoringThread, &ManagerSock);
-        
+        pthread_create(&interfaceThreadId, NULL, interfaceThread, NULL);
         while(1)
         {
 
         }
-        displayParticipants();
     }
-
-    // Adicionar na tabela o novo participante
-    //
- 
 };
