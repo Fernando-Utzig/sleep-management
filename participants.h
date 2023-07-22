@@ -21,4 +21,5 @@ unsigned long hash(char *mac);
 void init_participantTable(void);
 void printParticipant(Participant *participant);
 void printAllParticipants();
+Participant *getParticipant(char *Mac);
 #endif

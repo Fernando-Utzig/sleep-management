@@ -2,7 +2,7 @@
 #ifndef C_MONITORING
 #define C_MONITORING
 #include "monitoring.h"
-#define PORT_CLIENT_MON 4023
+#define PORT_CLIENT_MON 4024
 #define BUFFER_SIZE_MON 1024
 
 int compare_all(char* u,char*d,int len)
@@ -72,6 +72,8 @@ void *ParticipantMonitoringThread(void *arg) {
         fflush(stderr);
     }
 }
+
+
 
 
 #endif
