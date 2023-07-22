@@ -83,19 +83,20 @@ void interfaceThread(void *arg) {
     }
 }
 
-
-
 int main(int argc, char *argv[]){
-
     pthread_t discoveryThreadId, interfaceThreadId, monitoringThreadId, managementThreadId;
     init_participantTable();
+    Participant *tmp;
+    char read[64];
     if (argc > 1 && strcmp(argv[1], "manager") == 0) {
         isManager = 1;
         printf("Estação iniciada como Manager\n");
         pthread_create(&discoveryThreadId, NULL, discoveryThread, NULL);
         while(1)
         {
-
+            fgets(read,1,stdin);
+            if(read[0] == 'w')
+                tmp = getParticipant("f4:b5:20:1b:2e:a2");
         }
     } else {
         int is_awaken = 1;
