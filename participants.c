@@ -13,9 +13,11 @@ pthread_mutex_t myselfMutex;
 
 void printAllParticipants()
 {
+    pthread_mutex_lock(&participantsMutex);
     for (int i=0; i<TABLE_SIZE; i++) {
         printParticipant(ParticipantsTable[i]);
     }
+    pthread_mutex_unlock(&participantsMutex);
 }
 unsigned long hash(char *mac){
     unsigned long sum =0;
@@ -33,7 +35,7 @@ void init_participantTable(void)
     {
         ParticipantsTable[i]=NULL;
     }
-    fprintf(stderr,"participants table iniciated");
+    fprintf(stderr,"participants table iniciated\n");
 } 
 
 int get_index(char* Message,int message_lenght)

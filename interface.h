@@ -11,6 +11,8 @@
 #include <netdb.h>
 #include "participants.h"
 #include <arpa/inet.h>
+#include <signal.h>
 
-void *interfaceThread(void *arg);
+void *interfaceThreadParticipant(void *arg);
+void *interfaceThreadManager(void *arg);
 #endif
