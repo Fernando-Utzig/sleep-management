@@ -12,7 +12,7 @@
 #include <arpa/inet.h>
 #include <signal.h>
 #include "participants.h"
-
+#include <dirent.h>
 
 
 #define PORT 4000

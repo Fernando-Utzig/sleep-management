@@ -27,7 +27,7 @@ int createSocket(int port, char serverName[]) {
     if(serverName == NULL)
         serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
     else{
-        printf("\ngetting host name %s\n", serverName);
+        printf("getting host name %s\n", serverName);
         server = gethostbyname(serverName);
         if(server == NULL)
         {
@@ -88,36 +88,70 @@ void *discoveryThread(void *arg) {
     }
 }
 
-char *createDiscoveryPackage()
+void getMyMac(char *myMac)
 {
-
-}
-
-int sendDiscoverypackaged(struct sockaddr_in *Manageraddress)
-{
-    unsigned int length;
-    struct sockaddr_in serveraddress;
-    struct hostent *myhost;
-    char *myip;
-    FILE * eth0 = fopen("/sys/class/net/eth0/address", "r");
-    char MyMac[20];
+    if(myMac == NULL)
+    {
+        printf("Trying to get mac with NULL string\n");
+        return;
+    }
+        
+    DIR *dp;
+    struct dirent *ep;
+    char address_path[256] = "/sys/class/net/";
+    dp = opendir ("/sys/class/net/");
+    if (dp == NULL)
+    {
+        printf("MY MAC READ FAILED- failed to read directory /sys/class/net/\n");
+        strcpy(myMac,"AA:BB:CC:DD:EE:FF");
+        return;
+    }
+    do
+    {
+        ep = readdir (dp);
+    } while (ep != NULL && ep->d_name[0]=='.');
+    if(ep == NULL)
+    {
+        printf("MY MAC READ FAILED- failed to get connection folder in /sys/class/net/\n");
+        strcpy(myMac,"AA:BB:CC:DD:EE:FF");
+        return;
+    }
+    
+    fprintf(stderr,"ep = %s\n",ep->d_name);
+    strcat(address_path,ep->d_name);
+    strcat(address_path,"/address");
+    fprintf(stderr,"address path used = %s\n",address_path);
+    FILE * eth0 = fopen(address_path, "r");
 	if(eth0 == NULL)
 	{
-		printf("\nMY MAC READ FAILED- to open file\n");
-        strcpy(MyMac,"AA:BB:CC:DD:EE:FF");
+		printf("MY MAC READ FAILED- to open file\n");
+        strcpy(myMac,"AA:BB:CC:DD:EE:FF");
+        return;
 	}
-    else
+
+    if(fgets(myMac, 18, eth0) == NULL )// getting only the mac, which is the 18 first char
     {
-        if(fgets(MyMac, 18, eth0) == NULL )// getting only the mac, which is the 18 first char
-        {
-            printf("\nMY MAC READ FAILED-to read file\n");
-            strcpy(MyMac,"AA:BB:CC:DD:EE:FF");
-        }
+        printf("MY MAC READ FAILED-to read file\n");
+        strcpy(myMac,"AA:BB:CC:DD:EE:FF");
     }
+    printf("mymac = %s\n",myMac);
+    return;
+}
+
+void createDiscoveryPackage(char * sendMessage)
+{
+    struct hostent *myhost;
+    char *myip;
+    char myMac[256];
+    if(sendMessage == NULL)
+    {
+        fprintf(stderr,"createDiscoveryPackage got a NULL sendMessage\n");
+    }
+    getMyMac(myMac);
     char MyHostName[256];
     if(gethostname(MyHostName,sizeof(MyHostName)) == -1)
     {
-        printf("\nMY HOSTNAME READ FAILED");
+        printf("MY HOSTNAME READ FAILED\n");
         strcpy(MyHostName,"MyDefaultaHostname");
         myip = "10.1.1.1";
     }
@@ -127,17 +161,27 @@ int sendDiscoverypackaged(struct sockaddr_in *Manageraddress)
         myip = inet_ntoa(*((struct in_addr*)
                         myhost->h_addr_list[0]));
     }
-	char sendMessage[BUFFER_SIZE];
+	
     
-    fprintf(stderr,"\nMyMac is =%s",MyMac);
-    strcpy(sendMessage,MyMac);
+    fprintf(stderr,"MyMac is =%s\n",myMac);
+    strcpy(sendMessage,myMac);
     strcat(sendMessage, ",");
-    fprintf(stderr,"\nhostname is = %s",MyHostName);
+    fprintf(stderr,"hostname is = %s\n",MyHostName);
     strcat(sendMessage, MyHostName);
-    fprintf(stderr,"\nmyip is = %s",myip);
+    fprintf(stderr,"myip is = %s\n",myip);
     strcat(sendMessage, ",");
     strcat(sendMessage, myip);
-    fprintf(stderr,"\nsendmessage = %s", sendMessage);
+    fprintf(stderr,"sendmessage = %s\n", sendMessage);
+}
+
+int sendDiscoverypackaged(struct sockaddr_in *Manageraddress)
+{
+    unsigned int length;
+    struct sockaddr_in serveraddress;
+    
+    
+    char sendMessage[BUFFER_SIZE];
+    createDiscoveryPackage(sendMessage);
     char buffer[BUFFER_SIZE];
     char serv_addr[] = "255.255.255.255"; // MY BROADCAST IP
     int send,receive;
@@ -153,7 +197,7 @@ int sendDiscoverypackaged(struct sockaddr_in *Manageraddress)
     setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     if(server == NULL)
     {
-        fprintf(stderr,"problem finding master server");
+        fprintf(stderr,"problem finding master server\n");
     }
 	serveraddress.sin_addr = *((struct in_addr *)server->h_addr);
     receive = 0; //Mudar para receber confirmacao
@@ -161,18 +205,18 @@ int sendDiscoverypackaged(struct sockaddr_in *Manageraddress)
     struct in_addr ip_addr;
     char *some_addr;
     do{
-        fprintf(stderr,"\nsending discovery packaged");
+        fprintf(stderr,"sending discovery packaged\n");
         send = sendto(sockfd, sendMessage, strlen(sendMessage), 0, (const struct sockaddr *) &serveraddress, sizeof(struct sockaddr_in));
-        fprintf(stderr,"\n send value = %d",receive);
+        fprintf(stderr," send value = %d\n",receive);
         if (send < 0) 
-            fprintf(stderr,"\nERROR sendto: %d \n",send);
+            fprintf(stderr,"ERROR sendto: %d \n",send);
         else
         {
             receive = recvfrom(sockfd, buffer, 256, 0, (struct sockaddr *) Manageraddress, &length);
-            fprintf(stderr,"\nreceive value = %d",receive);
-            fprintf(stderr,"\nreceived discovery packaged: %s",buffer);
-            fprintf(stderr,"\n Manager ip(in integer)= %u",Manageraddress->sin_addr.s_addr);
-            fprintf(stderr,"\n Manager ip(in string)= %s",inet_ntoa(Manageraddress->sin_addr));
+            fprintf(stderr,"receive value = %d\n",receive);
+            fprintf(stderr,"received discovery packaged: %s\n",buffer);
+            fprintf(stderr," Manager ip(in integer)= %u\n",Manageraddress->sin_addr.s_addr);
+            fprintf(stderr," Manager ip(in string)= %s\n",inet_ntoa(Manageraddress->sin_addr));
         }
         tries++;
         tv.tv_usec = 0;
