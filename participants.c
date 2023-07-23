@@ -11,6 +11,7 @@ pthread_mutex_t myselfMutex;
 
 
 
+
 void printAllParticipants()
 {
     pthread_mutex_lock(&participantsMutex);
@@ -136,7 +137,7 @@ int AddParticipantToTable(char* Message,int message_lenght)
     }
     else
     {
-        fprintf(stderr,"Space is empty!");
+        fprintf(stderr,"Space is empty!\n");
         ParticipantsTable[computed_hash] = new_participant;
         return_value=1;
     }
@@ -212,5 +213,20 @@ Participant *getParticipant(char *Mac)
     pthread_mutex_unlock(&participantsMutex);
     return tmp;
 }
+
+void setMyselfSleep()
+{
+    pthread_mutex_lock(&myselfMutex);
+    myself.is_awaken=0;
+    pthread_mutex_unlock(&myselfMutex);
+}
+
+void setMyselfActive()
+{
+    pthread_mutex_lock(&myselfMutex);
+    myself.is_awaken=1;
+    pthread_mutex_unlock(&myselfMutex);
+}
+
 
 #endif

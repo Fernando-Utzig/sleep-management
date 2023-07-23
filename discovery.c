@@ -1,7 +1,9 @@
 #ifndef C_DISCOVERY
 #define C_DISCOVERY
 #include "discovery.h"
+#define CONFIRMATION_TRIES 3
 
+int MySocket =-1;
 
 int createSocket(int port, char serverName[]) {
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -10,13 +12,13 @@ int createSocket(int port, char serverName[]) {
     struct hostent *server;
     if (sockfd < 0) {
         printf("Failed to create socket.");
-        exit(EXIT_FAILURE);
+        raise(SIGINT);
     }
     ret = setsockopt(sockfd,SOL_SOCKET,SO_BROADCAST,&yes,sizeof(yes));
     if(ret != 0)
     {
         printf("Failed to configure the socket.");
-        exit(EXIT_FAILURE);
+        raise(SIGINT);
     }
     struct sockaddr_in serverAddr;
     memset(&serverAddr, 0, sizeof(serverAddr));
@@ -34,20 +36,34 @@ int createSocket(int port, char serverName[]) {
         serverAddr.sin_addr = *((struct in_addr *)server->h_addr);
     }
     bzero(&(serverAddr.sin_zero), 8); 
-    if(serverName == NULL)
-        if (bind(sockfd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
-            printf("Failed to bind the socket.");
+    if(serverName == NULL){
+        int bind_ret = bind(sockfd, (struct sockaddr*)&serverAddr, sizeof(serverAddr));
+        if (bind_ret < 0) {
+            printf("Failed to bind the Discovery socket. bind_ret: %d\n",bind_ret);
             close(sockfd);
-            exit(EXIT_FAILURE);
+            raise(SIGINT);
+            return -1;
         }
+        else
+            MySocket =sockfd;
+    }
     fprintf(stderr,"Socket id = %d",sockfd);
     fprintf(stderr,"\tDiscovery Socket Created\n");
     return sockfd;
 }
 
+void closeDiscoverySocket()
+{
+    if(MySocket != -1)
+        close(MySocket);
+    return;
+}
+
 void *discoveryThread(void *arg) {
     fprintf(stderr,"Starting Discovery\n");
     int sockfd = createSocket(PORT,NULL);
+    if(sockfd == -1)
+        return NULL;
     struct sockaddr_in clientAddr;
     char buffer[BUFFER_SIZE];
     socklen_t len = sizeof(clientAddr);
@@ -66,10 +82,15 @@ void *discoveryThread(void *arg) {
                 send_ret = sendto(sockfd, "FAILED TO ADD\n", strlen("FAILED TO ADD\n"), 0,(struct sockaddr *) &clientAddr, sizeof(struct sockaddr));
             else
                 send_ret = sendto(sockfd, "You have been added Succesfully\n", strlen("You have been added Sucessfuly\n"), 0,(struct sockaddr *) &clientAddr, sizeof(struct sockaddr));
-            fprintf(stderr,"send_ret = %d",send_ret);
+            fprintf(stderr,"send_ret = %d\n",send_ret);
         }
         fflush(stderr);
     }
+}
+
+char *createDiscoveryPackage()
+{
+
 }
 
 int sendDiscoverypackaged(struct sockaddr_in *Manageraddress)
@@ -157,7 +178,7 @@ int sendDiscoverypackaged(struct sockaddr_in *Manageraddress)
         tv.tv_usec = 0;
         
     }while((send <0 || receive <0) && tries <CONFIRMATION_TRIES);
-    if(tries >CONFIRMATION_TRIES)
+    if(tries >=CONFIRMATION_TRIES)
     {
         return -1;
     }

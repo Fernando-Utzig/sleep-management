@@ -9,9 +9,11 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <netdb.h>
-#include "participants.h"
 #include <arpa/inet.h>
 #include <signal.h>
+
+#include "participants.h"
+#include "monitoring.h"
 
 void *interfaceThreadParticipant(void *arg);
 void *interfaceThreadManager(void *arg);

@@ -9,7 +9,13 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <netdb.h>
+#include <signal.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include "participants.h"
 
 void *ParticipantMonitoringThread(void *arg);
+int sendWakeupRequest(Participant *participant);
+int sendSleepRequest(Participant *participant);
+void closeMonitoringSocket();
 #endif

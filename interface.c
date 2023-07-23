@@ -3,6 +3,11 @@
 #include "interface.h"
 
 
+#define UNDEFINED_COMMAND -1
+#define EXIT_COMMAND 1
+#define WAKE_UP_COMMAND 2
+#define SLEEP_COMMAND 3
+
 void removeEnterChar(char *string)
 {
     if(string == NULL)
@@ -34,13 +39,12 @@ void *interfaceThreadParticipant(void *arg) {
         if(fgetsreturn == NULL)
             raise(SIGINT);
         fflush(stdin);
-        removeEnterChar(command);
         if (strcmp(command,"EXIT")==0) {
             printf("exit");
             fflush(stdout);
         } else if (strcmp(command,"WAKEUP")==0) {
             printf("\n");
-            // Enviar comando de WAKEUP (pacote WoL) para a estação especificada
+            
         } else if(fgetsreturn!=NULL){
             printf("Comando inválido.\n");
         }
@@ -48,13 +52,29 @@ void *interfaceThreadParticipant(void *arg) {
     }
 }
 
-
+int decodeAction(char* command)
+{
+    if(command == NULL)
+    {
+        fprintf(stderr,"command received is NULL");
+        return UNDEFINED_COMMAND;
+    }
+    if(strcmp(command,"EXIT")==0)
+        return EXIT_COMMAND;
+    if(strcmp(command,"WAKEUP")==0) // melhorar decodificação do wakeup e do sleep!
+        return WAKE_UP_COMMAND;
+    if(strcmp(command,"SLEEP")==0)
+        return SLEEP_COMMAND;
+    return UNDEFINED_COMMAND;
+}
 
 void *interfaceThreadManager(void *arg) {
     char command[256];
     char mac[256];
     command[0]='\0';
+    Participant *participant;
     char *fgetsreturn ="nao nulo";
+    int request_result;
     // Função para exibir a lista de participantes na tela
     fprintf(stderr,"Iniciating InterfaceThreadManager\n");
     printAllParticipants();
@@ -65,23 +85,67 @@ void *interfaceThreadManager(void *arg) {
         fgetsreturn = fgets(command,256,stdin);
         if(fgetsreturn == NULL)
             raise(SIGINT);
-        fflush(stdin);
         removeEnterChar(command);
-        if (strcmp(command,"EXIT")==0) {
-            printf("exit");
-            fflush(stdout);
-        } else if (strcmp(command,"WAKEUP")==0) {
-            fflush(stdout);
+        switch (decodeAction(command))
+        {
+        case EXIT_COMMAND:
+            printf("exit not implemented yet");
+            break;
+        case WAKE_UP_COMMAND:
             printf("Type in the MAC address\n ");
             scanf("%s",mac);
-            printf("\n");
-            // Enviar comando de WAKEUP (pacote WoL) para a estação especificada
-        } else if(fgetsreturn!=NULL){
-            printf("Comando inválido.\n");
+            removeEnterChar(mac);
+            participant = getParticipant(mac);
+            if(participant ==NULL)
+            {
+                printf("Did not found participant\n");
+            }
+            else
+            {
+                request_result = sendWakeupRequest(participant);
+                if(request_result != 1)
+                {
+                    printf("Request failed\n");
+                }
+                else
+                {
+                    printf("Request Succefully\n");
+                }
+            }
+        break;
+        case SLEEP_COMMAND:
+            printf("Type in the MAC address\n "); // a especificação do trabalho pede que o comando seja wakeup <mac> não um segundo input, precisa criar uma funcao de decodificação
+            fgets(mac,256,stdin);
+            removeEnterChar(mac);
+            participant = getParticipant(mac);
+            if(participant ==NULL)
+            {
+                printf("Did not found participant\n");
+            }
+            else
+            {
+                request_result = sendSleepRequest(participant);
+                if(request_result != 1)
+                {
+                    printf("Request failed\n");
+                }
+                else
+                {
+                    printf("Request Succefully\n");
+                }
+            }
+            
+            break;
+        default:
+            if(fgetsreturn!=NULL && fgetsreturn[0]!='\0'){
+                printf("Comando inválido.\n");
+                fprintf(stderr,"fgetsreturn = %s\n",fgetsreturn);
+            }
+            break;
         }
-        fflush(stdin);
+        if(getchar() !='\n') // to read a trailling \\n that make the fgets skip a input
+            printf("erro lol kkkk");
     }
-    
 }
 
 #endif
