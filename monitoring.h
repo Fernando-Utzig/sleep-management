@@ -15,7 +15,6 @@
 #include "participants.h"
 
 void *ParticipantMonitoringThread(void *arg);
-int sendWakeupRequest(Participant *participant);
-int sendSleepRequest(Participant *participant);
+int sleepOrWakupParticipant(Participant *participant, int new_status);
 void closeMonitoringSocket();
 #endif

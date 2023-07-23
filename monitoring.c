@@ -134,7 +134,7 @@ struct sockaddr_in *getParticipantAddress(Participant *participant)
 int sendRequest(char* request,Participant *participant)
 {
     fprintf(stderr,"in SendRequest\n");
-    int send_ret,receive_ret;
+    int send_ret,receive_ret, request_result;
     char buffer[BUFFER_SIZE_MON];
     
     int tries =0;
@@ -172,24 +172,39 @@ int sendRequest(char* request,Participant *participant)
         tv.tv_usec = 0;
         tries++;
     } while((send_ret <0 || receive_ret <0) && tries <CONFIRMATION_TRIES);
-    if(tries >CONFIRMATION_TRIES)
-    {
-        return -1;
-    }
-    
+    if(tries >=CONFIRMATION_TRIES)
+        request_result = -1;
+    else
+        request_result =1;
     
     free(participantAddress);
-    return 1;
+    return request_result;
 }
 
-int sendWakeupRequest(Participant *participant)
+
+int sleepOrWakupParticipant(Participant *participant, int new_status)
 {
-    return sendRequest("wakeup",participant);
+    int update_result;
+    int request_result;
+    if(new_status ==1)
+        request_result = sendRequest("sleep",participant);
+    if(new_status == 0)
+        request_result =  sendRequest("wakeup",participant);
+    if(request_result == -1)
+        return -1;
+    else
+    {
+        if(request_result == 1)
+        {
+            participant->is_awaken=new_status;
+            update_result = updateParticipant(participant);
+        }
+    }
+    if(update_result =1 && request_result ==1)
+        return 1;
+    else
+        return -1;
 }
 
-int sendSleepRequest(Participant *participant)
-{
-    return sendRequest("sleep",participant);
-}
 
 #endif

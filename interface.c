@@ -102,7 +102,7 @@ void *interfaceThreadManager(void *arg) {
             }
             else
             {
-                request_result = sendWakeupRequest(participant);
+                request_result = sleepOrWakupParticipant(participant,1);
                 if(request_result != 1)
                 {
                     printf("Request failed\n");
@@ -124,7 +124,7 @@ void *interfaceThreadManager(void *arg) {
             }
             else
             {
-                request_result = sendSleepRequest(participant);
+                request_result = sleepOrWakupParticipant(participant,0);
                 if(request_result != 1)
                 {
                     printf("Request failed\n");

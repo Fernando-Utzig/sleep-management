@@ -80,6 +80,19 @@ Participant *Create_Participant(char* Message,int message_lenght)
     return new_participant;
 }
 
+//beware to lock the table before using this
+Participant *find_in_next(Participant *root,char *Mac)
+{
+    if(root == NULL)
+        return NULL;
+    if(strcmp(root->MAC,Mac))
+    {
+        return root;
+    }
+    else
+        return find_in_next(root->next,Mac);
+}
+
 int insert_in_next(Participant *old,Participant *new)
 {
     if(old == NULL || new == NULL)
@@ -145,11 +158,41 @@ int AddParticipantToTable(char* Message,int message_lenght)
     return return_value;
 }
 
-void UpdateParticipantStatus(char* hostname, int is_awaken)
+
+
+int updateParticipant(Participant *participant)
 {
-    
+    Participant *tmp;
+    int result;
+    if(participant == NULL)
+    {
+        fprintf(stderr,"Trying to update NULL participant\n");
+        return -1;
+    }
+    int computed_hash = hash(participant->MAC);
+    pthread_mutex_lock(&participantsMutex);
+    if(ParticipantsTable[computed_hash]==NULL)
+        result = -1;
+    else
+    {
+        if(strcmp(ParticipantsTable[computed_hash]->MAC,participant->MAC) == 0)
+            ParticipantsTable[computed_hash]->is_awaken=participant->is_awaken;
+        else{
+            tmp = find_in_next(ParticipantsTable[computed_hash]->next,participant->MAC);
+            if(tmp==NULL)
+                result = -2;
+            else
+            {
+                tmp->is_awaken=participant->is_awaken;
+                result=1;
+            }
+        }    
+    }    
+    pthread_mutex_unlock(&participantsMutex);
+    return result;
+
 }
-void RemoveParticipantFromTable(char* hostname)
+void removeParticipantFromTable(char* hostname)
 {
 }
 
@@ -181,18 +224,7 @@ Participant * deepCopyParticipant(Participant *original)
     return tmp;
 }
 
-//beware to lock the table before using this
-Participant *find_in_next(Participant *root,char *Mac)
-{
-    if(root == NULL)
-        return NULL;
-    if(strcmp(root->MAC,Mac))
-    {
-        return deepCopyParticipant(root);
-    }
-    else
-        return find_in_next(root->next,Mac);
-}
+
 
 Participant *getParticipant(char *Mac)
 {
@@ -209,7 +241,7 @@ Participant *getParticipant(char *Mac)
     if(strcmp(ParticipantsTable[computed_hash]->MAC,Mac) == 0)
         tmp=deepCopyParticipant(ParticipantsTable[computed_hash]);
     else
-        tmp= find_in_next(ParticipantsTable[computed_hash]->next,Mac);
+        tmp= deepCopyParticipant(find_in_next(ParticipantsTable[computed_hash]->next,Mac));        
     pthread_mutex_unlock(&participantsMutex);
     return tmp;
 }

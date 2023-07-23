@@ -22,6 +22,7 @@ void init_participantTable(void);
 void printParticipant(Participant *participant);
 void printAllParticipants();
 Participant *getParticipant(char *Mac);
+int updateParticipant(Participant *participant);
 void setMyselfActive();
 void setMyselfSleep();
 #endif
