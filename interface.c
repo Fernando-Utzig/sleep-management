@@ -33,19 +33,17 @@ void *interfaceThreadParticipant(void *arg) {
     printAllParticipants();
     while(fgetsreturn!=NULL)
     {
-        printf("Commands: EXIT and WAKEUP:\n");
+        printf("Commands: EXIT:\n");
         //scanf("%s",command);
         fgetsreturn = fgets(command,256,stdin);
         if(fgetsreturn == NULL)
             raise(SIGINT);
         fflush(stdin);
+        removeEnterChar(command);
         if (strcmp(command,"EXIT")==0) {
             printf("exit");
             fflush(stdout);
-        } else if (strcmp(command,"WAKEUP")==0) {
-            printf("\n");
-            
-        } else if(fgetsreturn!=NULL){
+        } else (fgetsreturn!=NULL){
             printf("Comando inválido.\n");
         }
         fflush(stdin);
