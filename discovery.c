@@ -59,17 +59,17 @@ void closeDiscoverySocket()
     return;
 }
 
-struct sockaddr*copyClientAddress(struct sockaddr*client) //in case we need a another thread to proccess discovery packages
-{
-    struct sockaddr* copy = (struct sockaddr*) malloc(sizeof(struct sockaddr));
-    copy->sin_family=client->sin_family;
-    copy->sin_port=client->sin_port;
-    copy->sin_addr.s_addr=client->sin_addr.s_addr;
-    int i;
-    for(i=0;i<8;i++)
-        copy->sin_zero[i]=client->sin_zero[i];
-    return copy
-}
+//struct sockaddr*copyClientAddress(struct sockaddr*client) //in case we need a another thread to proccess discovery packages
+//{
+//    struct sockaddr* copy = (struct sockaddr*) malloc(sizeof(struct sockaddr));
+//    copy->sin_family=client->sin_family;
+//    copy->sin_port=client->sin_port;
+//    copy->sin_addr.s_addr=client->sin_addr.s_addr;
+//    int i;
+//    for(i=0;i<8;i++)
+//        copy->sin_zero[i]=client->sin_zero[i];
+//    return copy;
+//}
 
 void *discoveryThread(void *arg) {
     fprintf(stderr,"Starting Discovery\n");
