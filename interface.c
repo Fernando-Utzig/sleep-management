@@ -49,19 +49,51 @@ void *interfaceThreadParticipant(void *arg) {
     }
 }
 
-int decodeAction(char* command)
+int decodeAction(char* command, char*mac)
 {
+    char wake[]="WAKEUP";
+    char sleep[]="SLEEP";
     if(command == NULL)
     {
         fprintf(stderr,"command received is NULL");
         return UNDEFINED_COMMAND;
     }
+    if(mac == NULL)
+    {
+        fprintf(stderr,"mac received is NULL");
+        return UNDEFINED_COMMAND;
+    }
     if(strcmp(command,"EXIT")==0)
         return EXIT_COMMAND;
-    if(strcmp(command,"WAKEUP")==0) // melhorar decodificação do wakeup e do sleep!
+    int i,result=0;
+    for(i=0;i<6;i++)
+    {
+        result+=command[i]-wake[i];
+    }
+    if(result == 0)
+    {
+        fprintf(stderr,"command[7] = %c\n",command[7]);
+        strcpy(mac,&command[7]);
+        fprintf(stderr,"wakeup command, mac fould = %s\n",mac);
         return WAKE_UP_COMMAND;
-    if(strcmp(command,"SLEEP")==0)
+    }
+    result=0;
+    for(i=0;i<5;i++)
+    {
+        result+=command[i]-sleep[i];
+    }
+    if(result == 0)
+    {
+        strcpy(mac,&command[6]);
+        fprintf(stderr,"sleep command, mac fould = %s\n",mac);
         return SLEEP_COMMAND;
+    }
+        
+
+    //if(strcmp(command,"WAKEUP")==0) // melhorar decodificação do wakeup e do sleep!
+    //    return WAKE_UP_COMMAND;
+    //if(strcmp(command,"SLEEP")==0)
+    //    return SLEEP_COMMAND;
     return UNDEFINED_COMMAND;
 }
 
@@ -89,14 +121,12 @@ void *interfaceThreadManager(void *arg) {
         if(fgetsreturn == NULL)//EOF
             raise(SIGINT);
         removeEnterChar(command);
-        switch (decodeAction(command))
+        switch (decodeAction(command,mac))
         {
         case EXIT_COMMAND:
             printf("exit not implemented yet");
             break;
         case WAKE_UP_COMMAND:
-            printf("Type in the MAC address\n ");
-            scanf("%s",mac);
             removeEnterChar(mac);
             participant = getParticipant(mac);
             if(participant ==NULL)
