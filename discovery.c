@@ -4,6 +4,7 @@
 #define CONFIRMATION_TRIES 3
 
 int MySocket =-1;
+void createDiscoveryPackage(char * sendMessage);
 
 int createSocket(int port, char serverName[]) {
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -78,6 +79,8 @@ void *discoveryThread(void *arg) {
         return NULL;
     struct sockaddr_in clientAddr;
     char buffer[BUFFER_SIZE];
+    char managerInfo[BUFFER_SIZE];
+    createDiscoveryPackage(managerInfo);
     socklen_t len = sizeof(clientAddr);
     int send_ret,n,insertion_result;
     int teste;
@@ -94,7 +97,7 @@ void *discoveryThread(void *arg) {
             if(insertion_result<0)
                 send_ret = sendto(sockfd, "FAILED TO ADD\n", strlen("FAILED TO ADD\n"), 0,(struct sockaddr *) &clientAddr, sizeof(struct sockaddr));
             else
-                send_ret = sendto(sockfd, "You have been added Succesfully\n", strlen("You have been added Sucessfuly\n"), 0,(struct sockaddr *) &clientAddr, sizeof(struct sockaddr));
+                send_ret = sendto(sockfd, managerInfo, strlen(managerInfo), 0,(struct sockaddr *) &clientAddr, sizeof(struct sockaddr));
             fprintf(stderr,"send_ret = %d\n",send_ret);
         }
         fflush(stderr);
@@ -205,7 +208,7 @@ int sendDiscoverypackaged(struct sockaddr_in *Manageraddress)
 	serveraddress.sin_port = htons(PORT);    
     server = gethostbyname(serv_addr);
     struct timeval tv;
-    tv.tv_sec = 3;
+    tv.tv_sec = 10;
     tv.tv_usec = 0;
     setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     if(server == NULL)
@@ -230,6 +233,7 @@ int sendDiscoverypackaged(struct sockaddr_in *Manageraddress)
             fprintf(stderr,"received discovery packaged: %s\n",buffer);
             fprintf(stderr," Manager ip(in integer)= %u\n",Manageraddress->sin_addr.s_addr);
             fprintf(stderr," Manager ip(in string)= %s\n",inet_ntoa(Manageraddress->sin_addr));
+            setManager(buffer,receive);
         }
         tries++;
         tv.tv_usec = 0;

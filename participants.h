@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #define Participant_Name_size 64
 #define TABLE_SIZE 997
 struct ParticipantData {
@@ -23,6 +24,9 @@ void printParticipant(Participant *participant);
 void printAllParticipants();
 Participant *getParticipant(char *Mac);
 int updateParticipant(Participant *participant);
+Participant *Create_Participant(char* Message,int message_lenght);
+void printManager();
+void setManager(char* Message,int message_lenght);
 void setMyselfActive();
 void setMyselfSleep();
 #endif

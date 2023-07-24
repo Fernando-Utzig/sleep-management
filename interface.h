@@ -17,4 +17,5 @@
 
 void *interfaceThreadParticipant(void *arg);
 void *interfaceThreadManager(void *arg);
+void *printManagerThread(void *arg);
 #endif

@@ -7,6 +7,7 @@
 Participant* ParticipantsTable[TABLE_SIZE];
 pthread_mutex_t participantsMutex;
 Participant myself;
+Participant *Manager;
 pthread_mutex_t myselfMutex;
 
 
@@ -20,6 +21,17 @@ void printAllParticipants()
     }
     pthread_mutex_unlock(&participantsMutex);
 }
+
+void setManager(char* Message,int message_lenght)
+{
+    Manager = Create_Participant(Message,message_lenght);
+}
+
+void printManager()
+{
+    printParticipant(&Manager);
+}
+
 unsigned long hash(char *mac){
     unsigned long sum =0;
     for (int j=0;mac[j]!='\0';j++)

@@ -54,10 +54,11 @@ int main(int argc, char *argv[]){
             exit(1);
         }
         pthread_create(&monitoringThreadId, NULL, ParticipantMonitoringThread, &ManagerSock);
-        pthread_create(&interfaceThreadId, NULL, interfaceThreadParticipant, NULL);
+        pthread_create(&interfaceThreadId, NULL, printManagerThread, NULL);
         while(keepRunning)
         {
         }
+        //sendExitPacket();
     }
     fprintf(stderr,"Closing Threads\n");
     fprintf(stderr,"Closing Thread discoveryThreadId %ld\n",discoveryThreadId);

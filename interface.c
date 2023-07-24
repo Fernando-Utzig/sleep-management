@@ -68,6 +68,12 @@ int decodeAction(char* command)
     return UNDEFINED_COMMAND;
 }
 
+void *printManagerThread(void *arg)
+{
+    printManager();
+    sleep(3000);
+}
+
 void *interfaceThreadManager(void *arg) {
     char command[256];
     char mac[256];
@@ -83,7 +89,7 @@ void *interfaceThreadManager(void *arg) {
         printf("Commands: EXIT and WAKEUP:\n");
         //scanf("%s",command);
         fgetsreturn = fgets(command,256,stdin);
-        if(fgetsreturn == NULL)
+        if(fgetsreturn == NULL)//EOF
             raise(SIGINT);
         removeEnterChar(command);
         switch (decodeAction(command))
