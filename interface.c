@@ -29,8 +29,7 @@ void *interfaceThreadParticipant(void *arg) {
     command[0]='\0';
     char *fgetsreturn ="nao nulo";
     // Função para exibir a lista de participantes na tela
-    fprintf(stderr,"Iniciating InterfaceThreadManager\n");
-    printAllParticipants();
+    fprintf(stderr,"Iniciating interfaceThreadParticipant\n");
     while(fgetsreturn!=NULL)
     {
         printf("Commands: EXIT:\n");
@@ -43,7 +42,7 @@ void *interfaceThreadParticipant(void *arg) {
         if (strcmp(command,"EXIT")==0) {
             printf("exit");
             fflush(stdout);
-        } else (fgetsreturn!=NULL){
+        } else if (fgetsreturn!=NULL){
             printf("Comando inválido.\n");
         }
         fflush(stdin);
