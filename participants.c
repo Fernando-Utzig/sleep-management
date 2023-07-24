@@ -71,7 +71,7 @@ Participant *Create_Participant(char* Message,int message_lenght)
     copystring(new_participant->MAC,Message,mac_index);
     hostname_index = get_index(&Message[mac_index+1],message_lenght-mac_index)+mac_index+1;
     fprintf(stderr,"ip_index=%d bate em %c\n",hostname_index,Message[hostname_index]);
-    copystring(new_participant->Hostname,&Message[mac_index+1],hostname_index);
+    copystring(new_participant->Hostname,&Message[mac_index+1],hostname_index - mac_index - 1);
     ip_index = get_index(&Message[hostname_index+1],message_lenght-hostname_index);
     copystring(new_participant->ip_address,&Message[hostname_index+1],ip_index);
     new_participant->is_awaken=1;
@@ -198,19 +198,32 @@ void removeParticipantFromTable(char* hostname)
 
 void printParticipant(Participant *participant)
 {
-    if(participant == NULL)
+    if (participant == NULL)
         return;
-    if(participant->Hostname !=NULL)
-        printf("Hostname: %s ,",participant->Hostname);
-    if(participant->ip_address !=NULL)
-        printf(" IP: %s,",participant->ip_address);
-    if(participant->MAC !=NULL)
-        printf(" MAC: %s,",participant->MAC);
-    if(participant->is_awaken ==0)
-        printf(" Status: Sleeping");
+    int headerPrinted = 0;
+    if (!headerPrinted) {
+        printf("-------------------------\n");
+        printf("      Participants       \n");
+        printf("--------------------------\n");
+        headerPrinted = 1; 
+    }
+
+    if (participant->Hostname != NULL)
+        printf("Hostname: %s\n", participant->Hostname);
+        printf("-------------------------\n");
+    if (participant->ip_address != NULL)
+        printf("IP: %s\n", participant->ip_address);
+        printf("-------------------------\n");
+    if (participant->MAC != NULL)
+        printf("MAC: %s\n", participant->MAC);
+        printf("-------------------------\n");
+
+    printf("Status: ");
+    if (participant->is_awaken == 0)
+        printf("Sleeping\n");
     else
-        printf(" Status: Active");
-    printf("\n");
+        printf("Active\n");
+    printf("-------------------------\n");
     printParticipant(participant->next);
 }
 
