@@ -11,8 +11,11 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/types.h>
+#include "interface.h"
+
 #define Participant_Name_size 64
 #define TABLE_SIZE 997
+
 struct ParticipantData {
     char Hostname[Participant_Name_size];
     char MAC[Participant_Name_size];
@@ -38,6 +41,8 @@ void setManager(Participant *received);
 void setMyselfActive();
 void setMyselfSleep();
 Participant *getMyselfCopy();
+Participant *getManagerCopy();
 void copyParticipant();
+struct sockaddr_in *getParticipantAddress(Participant *participant,int port);
 
 #endif

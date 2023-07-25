@@ -8,6 +8,8 @@
 #define WAKE_UP_COMMAND 2
 #define SLEEP_COMMAND 3
 
+pthread_mutex_t displayMutex;
+
 void removeEnterChar(char *string)
 {
     if(string == NULL)
@@ -22,6 +24,20 @@ void removeEnterChar(char *string)
         string[i]='\0';
     return;
 }
+
+void display()
+{
+    pthread_mutex_unlock(&displayMutex);
+}
+
+void *displayParticipantsTable(void *arg) {
+    while(1)
+    {
+        pthread_mutex_lock(&displayMutex);
+        printAllParticipants();
+    }
+}
+
 
 void *interfaceThreadParticipant(void *arg) {
     char command[256];
@@ -40,8 +56,7 @@ void *interfaceThreadParticipant(void *arg) {
         fflush(stdin);
         removeEnterChar(command);
         if (strcmp(command,"EXIT")==0) {
-            printf("exit");
-            fflush(stdout);
+            raise(SIGINT);
         } else if (fgetsreturn!=NULL){
             printf("Comando inválido.\n");
         }
@@ -124,7 +139,7 @@ void *interfaceThreadManager(void *arg) {
         switch (decodeAction(command,mac))
         {
         case EXIT_COMMAND:
-            printf("exit not implemented yet");
+            raise(SIGINT);
             break;
         case WAKE_UP_COMMAND:
             removeEnterChar(mac);
@@ -147,8 +162,6 @@ void *interfaceThreadManager(void *arg) {
             }
         break;
         case SLEEP_COMMAND:
-            printf("Type in the MAC address\n "); // a especificação do trabalho pede que o comando seja wakeup <mac> não um segundo input, precisa criar uma funcao de decodificação
-            fgets(mac,256,stdin);
             removeEnterChar(mac);
             participant = getParticipant(mac);
             if(participant ==NULL)

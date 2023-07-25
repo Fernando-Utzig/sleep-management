@@ -30,7 +30,7 @@ void ReceiveInterruption(int signalvalue)
     keepRunning =0;
 }
 int main(int argc, char *argv[]){
-    pthread_t discoveryThreadId =0, interfaceThreadId=0, monitoringThreadId=0, managementThreadId =0;
+    pthread_t discoveryThreadId =0, interfaceThreadId=0, monitoringThreadId=0, managementThreadId =0,displayThreadId=0;
     init_participantTable();
     setMySelf();
     Participant *tmp;
@@ -42,7 +42,8 @@ int main(int argc, char *argv[]){
         printf("Estação iniciada como Manager\n");
         pthread_create(&discoveryThreadId, NULL, discoveryThread, NULL);
         pthread_create(&interfaceThreadId, NULL, interfaceThreadManager, NULL);
-        printf("pthread_t value after = %ld\n",discoveryThreadId);
+        pthread_create(&displayThreadId, NULL, displayParticipantsTable, NULL);
+        fprintf(stderr,"pthread_t value after = %ld\n",discoveryThreadId);
         while(keepRunning)
         {
             //what we could use this for?
@@ -59,9 +60,16 @@ int main(int argc, char *argv[]){
         while(keepRunning)
         {
         }
-        //sendExitPacket();
+        printf("Sending Exit request\n");
+        fflush(stdout);
+        tmp = getManagerCopy();
+        if(tmp != NULL)
+            if(sendExitRequest(tmp) == 1)
+                printf("Exit successful!\n")
+            else
+                printf("Exit failed\n");
     }
-    fprintf(stderr,"Closing Threads\n");
+    fprintf(stderr,"PQP Closing Threads\n");
     fprintf(stderr,"Closing Thread discoveryThreadId %ld\n",discoveryThreadId);
     if(discoveryThreadId != 0)
         pthread_cancel(discoveryThreadId);
@@ -71,6 +79,9 @@ int main(int argc, char *argv[]){
     fprintf(stderr,"Closing Thread interfaceThreadId %ld\n",interfaceThreadId);
     if(interfaceThreadId != 0)
         pthread_cancel(interfaceThreadId);
+    fprintf(stderr,"Closing Thread displayThreadId %ld\n",interfaceThreadId);
+    if(displayThreadId != 0)
+        pthread_cancel(displayThreadId);
     fprintf(stderr,"Threads Closed!\n");
     closeDiscoverySocket();
     closeMonitoringSocket();

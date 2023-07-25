@@ -13,15 +13,17 @@
 #include <signal.h>
 #include "participants.h"
 #include <dirent.h>
-
+#include "monitoring.h"
+#include <errno.h>
 
 #define PORT 4000
 #define BUFFER_SIZE 1024
-#define PORT_CLIENT 4021
+#define PORT_CLIENT 4026
 
 int sendDiscoverypackaged(struct sockaddr_in *Manageraddress);
 void *discoveryThread(void *arg);
 int sendDiscoverypackaged(struct sockaddr_in *Manageraddress);
+int sendExitRequest(Participant *manager);
 int createSocket(int port, char serverName[]);
 void closeDiscoverySocket();
 #endif

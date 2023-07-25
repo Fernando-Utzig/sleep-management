@@ -39,6 +39,7 @@ void removeEnterCharMon(char *string)
 }
 
 int createSocketMon(int port, struct sockaddr_in *Manageraddress) {
+    fprintf(stderr,"Creating socket");
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     struct hostent *server;
     if (sockfd < 0) {
@@ -105,29 +106,7 @@ void *ParticipantMonitoringThread(void *arg) {
     return NULL;
 }
 
-struct sockaddr_in *getParticipantAddress(Participant *participant)
-{
-    if(participant == NULL)
-    {
-        fprintf(stderr,"Error on getting participant address, participant is null \n");
-        return NULL;
-    }
-    if(participant->ip_address == NULL )
-    {
-        fprintf(stderr,"Error on getting participant address, participant ip_address is null \n");
-        return NULL;
-    }
-    struct sockaddr_in *serverAddr = (struct sockaddr_in *) malloc(sizeof(struct sockaddr_in));
-    int worked = inet_aton("127.0.1.1",&serverAddr->sin_addr);
-    if(worked != 0 && strcmp(participant->ip_address,"127.0.1.1"))
-    {
-        fprintf(stderr,"Error on getting participant address, participant ip_address is Invalid. Address: %s \n",participant->ip_address);
-        return NULL;
-    }
-    serverAddr->sin_family = AF_INET;
-    serverAddr->sin_port = htons(PORT_CLIENT_MON);
-    return serverAddr;
-}
+
 
 
 
@@ -138,7 +117,7 @@ int sendRequest(char* request,Participant *participant)
     char buffer[BUFFER_SIZE_MON];
     
     int tries =0;
-    struct sockaddr_in *participantAddress = getParticipantAddress(participant);
+    struct sockaddr_in *participantAddress = getParticipantAddress(participant,PORT_CLIENT_MON);
     struct sockaddr_in Manageraddress;
     
     if(participantAddress == NULL)

@@ -18,4 +18,6 @@
 void *interfaceThreadParticipant(void *arg);
 void *interfaceThreadManager(void *arg);
 void *printManagerThread(void *arg);
+void *displayParticipantsTable(void *arg);
+void display();
 #endif

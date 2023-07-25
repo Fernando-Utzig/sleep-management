@@ -1,5 +1,5 @@
 wakeonlan: participants.o wakeonlan.c discovery.o monitoring.o interface.o
-	gcc participants.o discovery.o monitoring.o interface.o wakeonlan.c -o  wakeonlan  -lpthread
+	gcc participants.o discovery.o monitoring.o interface.o wakeonlan.c -o  sleep_server  -lpthread
 
 participants.o: participants.c
 	gcc -c participants.c
