@@ -32,6 +32,7 @@ void ReceiveInterruption(int signalvalue)
 int main(int argc, char *argv[]){
     pthread_t discoveryThreadId =0, interfaceThreadId=0, monitoringThreadId=0, managementThreadId =0;
     init_participantTable();
+    setMySelf();
     Participant *tmp;
     char read[64];
     printf("pthread_t value before = %ld\n",discoveryThreadId);

@@ -11,7 +11,7 @@ Participant *Manager;
 pthread_mutex_t myselfMutex;
 
 
-
+Participant * CreateCopyParticipant(Participant *original);
 
 void printAllParticipants()
 {
@@ -22,14 +22,92 @@ void printAllParticipants()
     pthread_mutex_unlock(&participantsMutex);
 }
 
-void setManager(char* Message,int message_lenght)
+void setManager(Participant *received)
 {
-    Manager = Create_Participant(Message,message_lenght);
+    Manager = CreateCopyParticipant(received);
 }
 
+
+
+void getMyMac(char *myMac)
+{
+    if(myMac == NULL)
+    {
+        printf("Trying to get mac with NULL string\n");
+        return;
+    }
+        
+    DIR *dp;
+    struct dirent *ep;
+    char address_path[256] = "/sys/class/net/";
+    dp = opendir ("/sys/class/net/");
+    if (dp == NULL)
+    {
+        printf("MY MAC READ FAILED- failed to read directory /sys/class/net/\n");
+        strcpy(myMac,"AA:BB:CC:DD:EE:FF");
+        return;
+    }
+    do
+    {
+        ep = readdir (dp);
+    } while (ep != NULL && ep->d_name[0]=='.');
+    if(ep == NULL)
+    {
+        printf("MY MAC READ FAILED- failed to get connection folder in /sys/class/net/\n");
+        strcpy(myMac,"AA:BB:CC:DD:EE:FF");
+        return;
+    }
+    
+    fprintf(stderr,"ep = %s\n",ep->d_name);
+    strcat(address_path,ep->d_name);
+    strcat(address_path,"/address");
+    fprintf(stderr,"address path used = %s\n",address_path);
+    FILE * eth0 = fopen(address_path, "r");
+	if(eth0 == NULL)
+	{
+		printf("MY MAC READ FAILED- to open file\n");
+        strcpy(myMac,"AA:BB:CC:DD:EE:FF");
+        return;
+	}
+
+    if(fgets(myMac, 18, eth0) == NULL )// getting only the mac, which is the 18 first char
+    {
+        printf("MY MAC READ FAILED-to read file\n");
+        strcpy(myMac,"AA:BB:CC:DD:EE:FF");
+    }
+    printf("mymac = %s\n",myMac);
+    return;
+}
+
+void setMySelf()
+{
+    struct hostent *myhost;
+    fprintf(stderr,"Getting My Participant Info\n");
+    char *myip;
+    getMyMac(myself.MAC);
+    if(gethostname(myself.Hostname,sizeof(myself.Hostname)) == -1)
+    {
+        printf("MY HOSTNAME READ FAILED\n");
+        strcpy(myself.Hostname,"MyDefaultaHostname");
+        strcpy(myself.ip_address,"10.1.1.1");
+    }
+    else
+    {
+        myhost = gethostbyname(myself.Hostname);
+        myip = inet_ntoa(*((struct in_addr*)
+                        myhost->h_addr_list[0]));
+        strcpy(myself.ip_address,myip);
+    }
+	
+    
+    fprintf(stderr,"MyMac is =%s\n",myself.MAC);
+    fprintf(stderr,"hostname is = %s\n",myself.Hostname);
+    fprintf(stderr,"myip is = %s\n",myself.ip_address);
+    
+}
 void printManager()
 {
-    printParticipant(&Manager);
+    printParticipant(Manager);
 }
 
 unsigned long hash(char *mac){
@@ -130,16 +208,17 @@ int insert_in_next(Participant *old,Participant *new)
     }
 }
 
-int AddParticipantToTable(char* Message,int message_lenght)
+int AddParticipantToTable(Participant *participant)
 {
+    fprintf(stderr,"Adding participant\n");
     int return_value;
-    if(Message == NULL)
+    if(participant == NULL)
     {
-        fprintf(stderr,"AddParticipantToTable message is NULL");
+        fprintf(stderr,"AddParticipantToTable participant is NULL\n");
         return -1;
     }
     int computed_hash;
-    Participant* new_participant = Create_Participant(Message,message_lenght);
+    Participant* new_participant = CreateCopyParticipant(participant);
     computed_hash=hash(new_participant->MAC);
     fprintf(stderr,"computed_hash = %d\n",computed_hash);
     fflush(stderr);
@@ -167,6 +246,7 @@ int AddParticipantToTable(char* Message,int message_lenght)
         return_value=1;
     }
     pthread_mutex_unlock(&participantsMutex);
+    fprintf(stderr,"Adding participant return value : %d\n",return_value);
     return return_value;
 }
 
@@ -204,8 +284,10 @@ int updateParticipant(Participant *participant)
     return result;
 
 }
-void removeParticipantFromTable(char* hostname)
+int removeParticipantFromTable(Participant *participant)
 {
+    fprintf(stderr,"Removin Participant\n");
+    return -1234;
 }
 
 void printParticipant(Participant *participant)
@@ -239,17 +321,30 @@ void printParticipant(Participant *participant)
     printParticipant(participant->next);
 }
 
-Participant * deepCopyParticipant(Participant *original)
+void copyParticipant(Participant *copy,Participant *original)
+{
+    strcpy(copy->Hostname,original->Hostname);
+    strcpy(copy->ip_address,original->ip_address);
+    strcpy(copy->MAC,original->MAC);
+    copy->is_awaken=original->is_awaken;
+}
+
+Participant * CreateCopyParticipant(Participant *original)
 {
     Participant *tmp = (Participant *) malloc(sizeof(Participant));
-    strcpy(tmp->Hostname,original->Hostname);
-    strcpy(tmp->ip_address,original->ip_address);
-    strcpy(tmp->MAC,original->MAC);
-    tmp->is_awaken=original->is_awaken;
+    copyParticipant(tmp,original);
     return tmp;
 }
 
-
+Participant *getMyselfCopy()
+{
+    fprintf(stderr,"Creatring copy of myself\n");
+    Participant *copy;
+    pthread_mutex_lock(&myselfMutex);
+    copy = CreateCopyParticipant(&myself);
+    pthread_mutex_unlock(&myselfMutex);
+    return copy;
+}
 
 Participant *getParticipant(char *Mac)
 {
@@ -264,9 +359,9 @@ Participant *getParticipant(char *Mac)
     if(ParticipantsTable[computed_hash]==NULL)
         return NULL;
     if(strcmp(ParticipantsTable[computed_hash]->MAC,Mac) == 0)
-        tmp=deepCopyParticipant(ParticipantsTable[computed_hash]);
+        tmp=CreateCopyParticipant(ParticipantsTable[computed_hash]);
     else
-        tmp= deepCopyParticipant(find_in_next(ParticipantsTable[computed_hash]->next,Mac));        
+        tmp= CreateCopyParticipant(find_in_next(ParticipantsTable[computed_hash]->next,Mac));        
     pthread_mutex_unlock(&participantsMutex);
     return tmp;
 }

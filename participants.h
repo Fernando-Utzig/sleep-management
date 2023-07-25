@@ -4,7 +4,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 #include <unistd.h>
+#include <dirent.h>
+#include <sys/types.h>
 #define Participant_Name_size 64
 #define TABLE_SIZE 997
 struct ParticipantData {
@@ -17,7 +23,8 @@ struct ParticipantData {
 
 
 
-int AddParticipantToTable(char* Message,int message_lenght);
+int AddParticipantToTable(Participant *participant);
+int removeParticipantFromTable(Participant *participant);
 unsigned long hash(char *mac);
 void init_participantTable(void);
 void printParticipant(Participant *participant);
@@ -26,7 +33,11 @@ Participant *getParticipant(char *Mac);
 int updateParticipant(Participant *participant);
 Participant *Create_Participant(char* Message,int message_lenght);
 void printManager();
-void setManager(char* Message,int message_lenght);
+void setMySelf();
+void setManager(Participant *received);
 void setMyselfActive();
 void setMyselfSleep();
+Participant *getMyselfCopy();
+void copyParticipant();
+
 #endif
