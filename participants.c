@@ -29,7 +29,7 @@ void setManager(char* Message,int message_lenght)
 
 void printManager()
 {
-    printParticipant(&Manager);
+    //printParticipant(&Manager);
 }
 
 unsigned long hash(char *mac){
@@ -206,6 +206,36 @@ int updateParticipant(Participant *participant)
 }
 void removeParticipantFromTable(char* hostname)
 {
+    pthread_mutex_lock(&participantsMutex);
+
+    int i;
+    for (i = 0; i < TABLE_SIZE; i++) {
+        Participant* current = ParticipantsTable[i];
+        Participant* prev = NULL;
+
+        while (current != NULL) {
+            if (strcmp(current->Hostname, hostname) == 0) {
+                if (prev != NULL) {
+                    // Participant is not at the head of the list
+                    prev->next = current->next;
+                    free(current);
+                    pthread_mutex_unlock(&participantsMutex);
+                    return;
+                } else {
+                    // Participant is at the head of the list
+                    ParticipantsTable[i] = current->next;
+                    free(current);
+                    pthread_mutex_unlock(&participantsMutex);
+                    return;
+                }
+            }
+
+            prev = current;
+            current = current->next;
+        }
+    }
+
+    pthread_mutex_unlock(&participantsMutex);
 }
 
 void printParticipant(Participant *participant)

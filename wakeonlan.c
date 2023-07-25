@@ -30,7 +30,7 @@ void ReceiveInterruption(int signalvalue)
     keepRunning =0;
 }
 int main(int argc, char *argv[]){
-    pthread_t discoveryThreadId =0, interfaceThreadId=0, monitoringThreadId=0, managementThreadId =0;
+    pthread_t discoveryThreadId =0, interfaceParticipantThreadId=0, interfaceManagerThreadId=0, monitoringThreadId=0, managementThreadId =0;
     init_participantTable();
     Participant *tmp;
     char read[64];
@@ -40,7 +40,7 @@ int main(int argc, char *argv[]){
         isManager = 1;
         printf("Estação iniciada como Manager\n");
         pthread_create(&discoveryThreadId, NULL, discoveryThread, NULL);
-        pthread_create(&interfaceThreadId, NULL, interfaceThreadManager, NULL);
+        pthread_create(&interfaceManagerThreadId, NULL, interfaceThreadManager, NULL);
         printf("pthread_t value after = %ld\n",discoveryThreadId);
         while(keepRunning)
         {
@@ -54,11 +54,16 @@ int main(int argc, char *argv[]){
             exit(1);
         }
         pthread_create(&monitoringThreadId, NULL, ParticipantMonitoringThread, &ManagerSock);
-        pthread_create(&interfaceThreadId, NULL, printManagerThread, NULL);
+        pthread_create(&interfaceParticipantThreadId, NULL, interfaceThreadParticipant, NULL);
         while(keepRunning)
         {
         }
-        //sendExitPacket();
+        if(sendExitPacket(&ManagerSock) == -1)
+        {
+            printf("\nFailed to send exit packet");
+            exit(1);
+        }
+        fprintf(stderr,"printa aqui");
     }
     fprintf(stderr,"Closing Threads\n");
     fprintf(stderr,"Closing Thread discoveryThreadId %ld\n",discoveryThreadId);
@@ -67,9 +72,9 @@ int main(int argc, char *argv[]){
     fprintf(stderr,"Closing Thread monitoringThreadId %ld\n",monitoringThreadId);
     if(monitoringThreadId != 0)
         pthread_cancel(monitoringThreadId);
-    fprintf(stderr,"Closing Thread interfaceThreadId %ld\n",interfaceThreadId);
-    if(interfaceThreadId != 0)
-        pthread_cancel(interfaceThreadId);
+    fprintf(stderr,"Closing Thread interfaceThreadId %ld\n",interfaceManagerThreadId);
+    if(interfaceManagerThreadId != 0)
+        pthread_cancel(interfaceManagerThreadId);
     fprintf(stderr,"Threads Closed!\n");
     closeDiscoverySocket();
     closeMonitoringSocket();

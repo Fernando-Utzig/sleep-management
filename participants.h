@@ -29,4 +29,5 @@ void printManager();
 void setManager(char* Message,int message_lenght);
 void setMyselfActive();
 void setMyselfSleep();
+void removeParticipantFromTable(char* hostname);
 #endif

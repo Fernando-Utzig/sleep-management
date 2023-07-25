@@ -137,7 +137,7 @@ void getMyMac(char *myMac)
     strcat(address_path,ep->d_name);
     strcat(address_path,"/address");
     fprintf(stderr,"address path used = %s\n",address_path);
-    FILE * eth0 = fopen(address_path, "r");
+    FILE * eth0 = fopen("/sys/class/net/enp8s0/address", "r");
 	if(eth0 == NULL)
 	{
 		printf("MY MAC READ FAILED- to open file\n");
@@ -234,6 +234,97 @@ int sendDiscoverypackaged(struct sockaddr_in *Manageraddress)
             fprintf(stderr," Manager ip(in integer)= %u\n",Manageraddress->sin_addr.s_addr);
             fprintf(stderr," Manager ip(in string)= %s\n",inet_ntoa(Manageraddress->sin_addr));
             setManager(buffer,receive);
+        }
+        tries++;
+        tv.tv_usec = 0;
+        
+    }while((send <0 || receive <0) && tries <CONFIRMATION_TRIES);
+    if(tries >=CONFIRMATION_TRIES)
+    {
+        return -1;
+    }
+    return 0;
+}
+
+void createExitPackage(char * sendMessage)
+{
+    struct hostent *myhost;
+    char *myip;
+    char myMac[256];
+    if(sendMessage == NULL)
+    {
+        fprintf(stderr,"createExitPackage got a NULL sendMessage\n");
+    }
+    getMyMac(myMac);
+    char MyHostName[256];
+    if(gethostname(MyHostName,sizeof(MyHostName)) == -1)
+    {
+        printf("MY HOSTNAME READ FAILED\n");
+        strcpy(MyHostName,"MyDefaultaHostname");
+        myip = "10.1.1.1";
+    }
+    else
+    {
+        myhost = gethostbyname(MyHostName);
+        myip = inet_ntoa(*((struct in_addr*)
+                        myhost->h_addr_list[0]));
+    }
+	
+    // Concatenando o MAC, Hostname e Ip ao sendMassage
+    fprintf(stderr,"MyMac is =%s\n",myMac);
+    strcpy(sendMessage,myMac);
+    strcat(sendMessage, ",");
+    fprintf(stderr,"hostname is = %s\n",MyHostName);
+    strcat(sendMessage, MyHostName);
+    fprintf(stderr,"myip is = %s\n",myip);
+    strcat(sendMessage, ",");
+    strcat(sendMessage, myip);
+    fprintf(stderr,"sendmessage = %s\n", sendMessage);
+}
+
+int sendExitPacket(struct sockaddr_in *Manageraddress)
+{
+    unsigned int length;
+    struct sockaddr_in serveraddress;
+    
+    
+    char sendMessage[BUFFER_SIZE];
+    createExitPackage(sendMessage);
+    char buffer[BUFFER_SIZE];
+    char serv_addr[] = "255.255.255.255"; // MY BROADCAST IP
+    int send,receive;
+    struct hostent *server;
+    int sockfd = createSocket(PORT_CLIENT,serv_addr);
+    length = sizeof(struct sockaddr_in);
+    serveraddress.sin_family = AF_INET;     
+	serveraddress.sin_port = htons(PORT);    
+    server = gethostbyname(serv_addr);
+    struct timeval tv;
+    tv.tv_sec = 10;
+    tv.tv_usec = 0;
+    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+    if(server == NULL)
+    {
+        fprintf(stderr,"problem finding master server\n");
+    }
+	serveraddress.sin_addr = *((struct in_addr *)server->h_addr);
+    receive = 0; //Mudar para receber confirmacao
+    int tries =0;
+    struct in_addr ip_addr;
+    char *some_addr;
+    do{
+        fprintf(stderr,"sending sleep service exit packaged\n");
+        send = sendto(sockfd, sendMessage, strlen(sendMessage), 0, (const struct sockaddr *) &serveraddress, sizeof(struct sockaddr_in));
+        fprintf(stderr," send value = %d\n",receive);
+        if (send < 0) 
+            fprintf(stderr,"ERROR sendto: %d \n",send);
+        else
+        {
+            receive = recvfrom(sockfd, buffer, 256, 0, (struct sockaddr *) Manageraddress, &length);
+            fprintf(stderr,"receive value = %d\n",receive);
+            fprintf(stderr,"received discovery packaged: %s\n",buffer);
+            fprintf(stderr," Manager ip(in integer)= %u\n",Manageraddress->sin_addr.s_addr);
+            fprintf(stderr," Manager ip(in string)= %s\n",inet_ntoa(Manageraddress->sin_addr));
         }
         tries++;
         tv.tv_usec = 0;

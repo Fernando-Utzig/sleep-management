@@ -37,11 +37,11 @@ void *interfaceThreadParticipant(void *arg) {
         fgetsreturn = fgets(command,256,stdin);
         if(fgetsreturn == NULL)
             raise(SIGINT);
-        fflush(stdin);
         removeEnterChar(command);
-        if (strcmp(command,"EXIT")==0) {
-            printf("exit");
+        if (strcmp(command,"exit")==0) {
+            printf("Leaving...");
             fflush(stdout);
+            return NULL;
         } else if (fgetsreturn!=NULL){
             printf("Comando inválido.\n");
         }
