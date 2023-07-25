@@ -19,7 +19,7 @@
 #define PORT 4000
 #define BUFFER_SIZE 1024
 #define PORT_CLIENT 4026
-
+void setDiscoveryLogFile(FILE *file);
 int sendDiscoverypackaged(struct sockaddr_in *Manageraddress);
 void *discoveryThread(void *arg);
 int sendDiscoverypackaged(struct sockaddr_in *Manageraddress);

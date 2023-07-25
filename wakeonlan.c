@@ -22,6 +22,35 @@ struct sockaddr_in ManagerSock;
 int isManager = 0;
 int keepRunning =1;
 
+FILE *openLogFile(char *name)
+{
+    FILE *file;
+
+    if(name == NULL)
+    {
+        fprintf(stderr,"got a null filname\n");
+        return NULL;
+    }
+    int tries=0;
+    int maxtries =20;
+    int last_char = strlen(name) -5;
+    char filename[256]; 
+    strcpy(filename,name); // need as the way i am passing the argument the string is read-only
+    do
+    {
+        
+        file = fopen(filename,"w");
+        tries++;
+        filename[last_char] = filename[last_char] +1;
+    } while (file == NULL && tries<maxtries);
+    if(tries >=maxtries)
+    {
+        fprintf(stderr,"FAILED to open any logfile\n");
+        return NULL;
+    }
+    return file;
+
+}
 
 void ReceiveInterruption(int signalvalue)
 {
@@ -31,11 +60,18 @@ void ReceiveInterruption(int signalvalue)
 }
 int main(int argc, char *argv[]){
     pthread_t discoveryThreadId =0, interfaceThreadId=0, monitoringThreadId=0, managementThreadId =0,displayThreadId=0;
-    init_participantTable();
-    setMySelf();
+    
+    
     Participant *tmp;
     char read[64];
-    printf("pthread_t value before = %ld\n",discoveryThreadId);
+    printf("Starting ... \n");
+    fflush(stdout);
+    setDiscoveryLogFile(openLogFile("discoveryLog_1.txt"));
+    setInterfaceLogFile(openLogFile("interfaceLog_1.txt"));
+    setMonitoringLogFile(openLogFile("monitoringLog_1.txt"));
+    setParticipantsLogFile(openLogFile("participantLog_1.txt"));
+    init_participantTable();
+    setMySelf();
     signal(SIGINT,ReceiveInterruption);
     if (argc > 1 && strcmp(argv[1], "manager") == 0) {
         isManager = 1;
@@ -43,7 +79,6 @@ int main(int argc, char *argv[]){
         pthread_create(&discoveryThreadId, NULL, discoveryThread, NULL);
         pthread_create(&interfaceThreadId, NULL, interfaceThreadManager, NULL);
         pthread_create(&displayThreadId, NULL, displayParticipantsTable, NULL);
-        fprintf(stderr,"pthread_t value after = %ld\n",discoveryThreadId);
         while(keepRunning)
         {
             //what we could use this for?
@@ -65,7 +100,7 @@ int main(int argc, char *argv[]){
         tmp = getManagerCopy();
         if(tmp != NULL)
             if(sendExitRequest(tmp) == 1)
-                printf("Exit successful!\n")
+                printf("Exit successful!\n");
             else
                 printf("Exit failed\n");
     }

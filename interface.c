@@ -9,12 +9,24 @@
 #define SLEEP_COMMAND 3
 
 pthread_mutex_t displayMutex;
+FILE *interface_logfile ;
+void setInterfaceLogFile(FILE *file)
+{
+    if(file != NULL)
+        interface_logfile =file;
+    else
+    {
+        interface_logfile=stderr;
+        fprintf(interface_logfile,"discovery got a null file, using std err instead \n");
+    }
+    fprintf(interface_logfile,"interface_logfile set\n");
+}
 
 void removeEnterChar(char *string)
 {
     if(string == NULL)
     {
-        fprintf(stderr, "trying to remove \\n from NULL string");
+        fprintf(interface_logfile, "trying to remove \\n from NULL string");
         return;
     }
     int i;
@@ -45,7 +57,7 @@ void *interfaceThreadParticipant(void *arg) {
     command[0]='\0';
     char *fgetsreturn ="nao nulo";
     // Função para exibir a lista de participantes na tela
-    fprintf(stderr,"Iniciating interfaceThreadParticipant\n");
+    fprintf(interface_logfile,"Iniciating interfaceThreadParticipant\n");
     while(fgetsreturn!=NULL)
     {
         printf("Commands: EXIT:\n");
@@ -70,12 +82,12 @@ int decodeAction(char* command, char*mac)
     char sleep[]="SLEEP";
     if(command == NULL)
     {
-        fprintf(stderr,"command received is NULL");
+        fprintf(interface_logfile,"command received is NULL");
         return UNDEFINED_COMMAND;
     }
     if(mac == NULL)
     {
-        fprintf(stderr,"mac received is NULL");
+        fprintf(interface_logfile,"mac received is NULL");
         return UNDEFINED_COMMAND;
     }
     if(strcmp(command,"EXIT")==0)
@@ -87,9 +99,9 @@ int decodeAction(char* command, char*mac)
     }
     if(result == 0)
     {
-        fprintf(stderr,"command[7] = %c\n",command[7]);
+        fprintf(interface_logfile,"command[7] = %c\n",command[7]);
         strcpy(mac,&command[7]);
-        fprintf(stderr,"wakeup command, mac fould = %s\n",mac);
+        fprintf(interface_logfile,"wakeup command, mac fould = %s\n",mac);
         return WAKE_UP_COMMAND;
     }
     result=0;
@@ -100,7 +112,7 @@ int decodeAction(char* command, char*mac)
     if(result == 0)
     {
         strcpy(mac,&command[6]);
-        fprintf(stderr,"sleep command, mac fould = %s\n",mac);
+        fprintf(interface_logfile,"sleep command, mac fould = %s\n",mac);
         return SLEEP_COMMAND;
     }
         
@@ -126,7 +138,7 @@ void *interfaceThreadManager(void *arg) {
     char *fgetsreturn ="nao nulo";
     int request_result;
     // Função para exibir a lista de participantes na tela
-    fprintf(stderr,"Iniciating InterfaceThreadManager\n");
+    fprintf(interface_logfile,"Iniciating InterfaceThreadManager\n");
     printAllParticipants();
     while(fgetsreturn!=NULL)
     {
@@ -185,7 +197,7 @@ void *interfaceThreadManager(void *arg) {
         default:
             if(fgetsreturn!=NULL && fgetsreturn[0]!='\0'){
                 printf("Comando inválido.\n");
-                fprintf(stderr,"fgetsreturn = %s\n",fgetsreturn);
+                fprintf(interface_logfile,"fgetsreturn = %s\n",fgetsreturn);
             }
             break;
         }

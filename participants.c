@@ -13,6 +13,19 @@ pthread_mutex_t myselfMutex;
 
 Participant * CreateCopyParticipant(Participant *original);
 
+FILE *participant_logfile ;
+void setParticipantsLogFile(FILE *file)
+{
+    if(file != NULL)
+        participant_logfile =file;
+    else
+    {
+        participant_logfile=stderr;
+        fprintf(participant_logfile,"discovery got a null file, using std err instead \n");
+    }
+    fprintf(participant_logfile,"participant_logfile set\n");
+}
+
 void printAllParticipants()
 {
     pthread_mutex_lock(&participantsMutex);
@@ -58,10 +71,10 @@ void getMyMac(char *myMac)
         return;
     }
     
-    fprintf(stderr,"ep = %s\n",ep->d_name);
+    fprintf(participant_logfile,"ep = %s\n",ep->d_name);
     strcat(address_path,ep->d_name);
     strcat(address_path,"/address");
-    fprintf(stderr,"address path used = %s\n",address_path);
+    fprintf(participant_logfile,"address path used = %s\n",address_path);
     FILE * eth0 = fopen(address_path, "r");
 	if(eth0 == NULL)
 	{
@@ -82,7 +95,7 @@ void getMyMac(char *myMac)
 void setMySelf()
 {
     struct hostent *myhost;
-    fprintf(stderr,"Getting My Participant Info\n");
+    fprintf(participant_logfile,"Getting My Participant Info\n");
     char *myip;
     getMyMac(myself.MAC);
     if(gethostname(myself.Hostname,sizeof(myself.Hostname)) == -1)
@@ -100,9 +113,9 @@ void setMySelf()
     }
 	
     
-    fprintf(stderr,"MyMac is =%s\n",myself.MAC);
-    fprintf(stderr,"hostname is = %s\n",myself.Hostname);
-    fprintf(stderr,"myip is = %s\n",myself.ip_address);
+    fprintf(participant_logfile,"MyMac is =%s\n",myself.MAC);
+    fprintf(participant_logfile,"hostname is = %s\n",myself.Hostname);
+    fprintf(participant_logfile,"myip is = %s\n",myself.ip_address);
     
 }
 void printManager()
@@ -126,7 +139,7 @@ void init_participantTable(void)
     {
         ParticipantsTable[i]=NULL;
     }
-    fprintf(stderr,"participants table iniciated\n");
+    fprintf(participant_logfile,"participants table iniciated\n");
 } 
 
 int get_index(char* Message,int message_lenght)
@@ -148,7 +161,7 @@ void copystring(char *dest,char *source,int lenght)
 }
 Participant *Create_Participant(char* Message,int message_lenght)
 {
-    fprintf(stderr,"printa isso Create_Participant\n");
+    fprintf(participant_logfile,"printa isso Create_Participant\n");
     Participant* new_participant = (Participant *)malloc(sizeof( Participant));
     char temp[Participant_Name_size];
     int i =0;
@@ -156,11 +169,11 @@ Participant *Create_Participant(char* Message,int message_lenght)
     int ip_index;
     int hostname_index;
     mac_index = get_index(Message,message_lenght);
-    fprintf(stderr,"i eh = %d a mensagem é = %s\n", mac_index,Message);
-    fprintf(stderr,"mac_index=%d bate em %c\n",mac_index,Message[mac_index]);
+    fprintf(participant_logfile,"i eh = %d a mensagem é = %s\n", mac_index,Message);
+    fprintf(participant_logfile,"mac_index=%d bate em %c\n",mac_index,Message[mac_index]);
     copystring(new_participant->MAC,Message,mac_index);
     hostname_index = get_index(&Message[mac_index+1],message_lenght-mac_index)+mac_index+1;
-    fprintf(stderr,"ip_index=%d bate em %c\n",hostname_index,Message[hostname_index]);
+    fprintf(participant_logfile,"ip_index=%d bate em %c\n",hostname_index,Message[hostname_index]);
     copystring(new_participant->Hostname,&Message[mac_index+1],hostname_index - mac_index - 1);
     ip_index = get_index(&Message[hostname_index+1],message_lenght-hostname_index);
     copystring(new_participant->ip_address,&Message[hostname_index+1],ip_index);
@@ -201,14 +214,14 @@ int insert_in_next(Participant *old,Participant *new)
 {
     if(old == NULL || new == NULL)
     {
-        fprintf(stderr,"insert_in_next FAILED");
+        fprintf(participant_logfile,"insert_in_next FAILED");
         return -1;
     }
     if(strcmp(old->MAC,new->MAC) == 0)
     {
         old->is_awaken=1;
         free(new);
-        fprintf(stderr,"Already known Participant");
+        fprintf(participant_logfile,"Already known Participant");
         return 2;
     }
     else{
@@ -224,27 +237,27 @@ int insert_in_next(Participant *old,Participant *new)
 
 int AddParticipantToTable(Participant *participant)
 {
-    fprintf(stderr,"Adding participant\n");
+    fprintf(participant_logfile,"Adding participant\n");
     int return_value;
     if(participant == NULL)
     {
-        fprintf(stderr,"AddParticipantToTable participant is NULL\n");
+        fprintf(participant_logfile,"AddParticipantToTable participant is NULL\n");
         return -1;
     }
     int computed_hash;
     Participant* new_participant = CreateCopyParticipant(participant);
     computed_hash=hash(new_participant->MAC);
-    fprintf(stderr,"computed_hash = %d\n",computed_hash);
-    fflush(stderr);
+    fprintf(participant_logfile,"computed_hash = %d\n",computed_hash);
+    fflush(participant_logfile);
     pthread_mutex_lock(&participantsMutex);
     if(ParticipantsTable[computed_hash] != NULL){
-        fprintf(stderr,"Found someone at the table\n");
+        fprintf(participant_logfile,"Found someone at the table\n");
         if(strcmp(ParticipantsTable[computed_hash]->MAC,new_participant->MAC) == 0)
         {
-            fprintf(stderr,"Already known Participant\n");
+            fprintf(participant_logfile,"Already known Participant\n");
             ParticipantsTable[computed_hash]->is_awaken=1;
-            fprintf(stderr,"seted particitipant as awake\n");
-            fprintf(stderr,"free new_participant\n");
+            fprintf(participant_logfile,"seted particitipant as awake\n");
+            fprintf(participant_logfile,"free new_participant\n");
             return_value=2;
         }
         else{
@@ -253,12 +266,12 @@ int AddParticipantToTable(Participant *participant)
     }
     else
     {
-        fprintf(stderr,"Space is empty!\n");
+        fprintf(participant_logfile,"Space is empty!\n");
         ParticipantsTable[computed_hash] = new_participant;
         return_value=1;
     }
     pthread_mutex_unlock(&participantsMutex);
-    fprintf(stderr,"Adding participant return value : %d\n",return_value);
+    fprintf(participant_logfile,"Adding participant return value : %d\n",return_value);
     display();
     return return_value;
 }
@@ -271,7 +284,7 @@ int updateParticipant(Participant *participant)
     int result;
     if(participant == NULL)
     {
-        fprintf(stderr,"Trying to update NULL participant\n");
+        fprintf(participant_logfile,"Trying to update NULL participant\n");
         return -1;
     }
     int computed_hash = hash(participant->MAC);
@@ -306,16 +319,16 @@ int removeParticipantFromTable(Participant *participant)
 {
     
     Participant *tmp,*tmp2;
-    fprintf(stderr,"Removin Participant\n");
+    fprintf(participant_logfile,"Removin Participant\n");
     int result;
     if(participant == NULL)
     {
-        fprintf(stderr,"Trying to remove NULL participant\n");
+        fprintf(participant_logfile,"Trying to remove NULL participant\n");
         return -1;
     }
     int computed_hash = hash(participant->MAC);
-    fprintf(stderr,"computed hash = %d\n",computed_hash);
-    fflush(stderr);
+    fprintf(participant_logfile,"computed hash = %d\n",computed_hash);
+    fflush(participant_logfile);
     pthread_mutex_lock(&participantsMutex);
     if(ParticipantsTable[computed_hash]==NULL)
         result = -1;
@@ -327,14 +340,14 @@ int removeParticipantFromTable(Participant *participant)
                 result =1;
                 if(ParticipantsTable[computed_hash]->next == NULL)
                 {
-                    fprintf(stderr,"removin found in list, no next\n");
-                    fflush(stderr);
+                    fprintf(participant_logfile,"removin found in list, no next\n");
+                    fflush(participant_logfile);
                     free(ParticipantsTable[computed_hash]);
                     ParticipantsTable[computed_hash]=NULL;
                 }
                 else
                 {
-                    fprintf(stderr,"removin found in list, next now in the list\n");
+                    fprintf(participant_logfile,"removin found in list, next now in the list\n");
                     tmp = ParticipantsTable[computed_hash];
                     ParticipantsTable[computed_hash] = ParticipantsTable[computed_hash]->next;
                     free(tmp);
@@ -355,7 +368,7 @@ int removeParticipantFromTable(Participant *participant)
     }
     pthread_mutex_unlock(&participantsMutex);
     display();
-    fprintf(stderr,"removing result: %d\n",result);
+    fprintf(participant_logfile,"removing result: %d\n",result);
     return result;
 }
 
@@ -407,7 +420,7 @@ Participant * CreateCopyParticipant(Participant *original)
 
 Participant *getMyselfCopy()
 {
-    fprintf(stderr,"Creatring copy of myself\n");
+    fprintf(participant_logfile,"Creatring copy of myself\n");
     Participant *copy;
     pthread_mutex_lock(&myselfMutex);
     copy = CreateCopyParticipant(&myself);
@@ -417,7 +430,7 @@ Participant *getMyselfCopy()
 
 Participant *getManagerCopy()
 {
-    fprintf(stderr,"Creatring copy of myself\n");
+    fprintf(participant_logfile,"Creatring copy of myself\n");
     Participant *copy;
     copy = CreateCopyParticipant(Manager);
     return copy;
@@ -428,7 +441,7 @@ Participant *getParticipant(char *Mac)
     Participant *tmp;
     if(Mac == NULL)
     {
-        fprintf(stderr,"ERROR Mac is null ");
+        fprintf(participant_logfile,"ERROR Mac is null ");
         return NULL;
     }
     int computed_hash=hash(Mac);
@@ -461,19 +474,19 @@ struct sockaddr_in *getParticipantAddress(Participant *participant,int port)
 {
     if(participant == NULL)
     {
-        fprintf(stderr,"Error on getting participant address, participant is null \n");
+        fprintf(participant_logfile,"Error on getting participant address, participant is null \n");
         return NULL;
     }
     if(participant->ip_address == NULL )
     {
-        fprintf(stderr,"Error on getting participant address, participant ip_address is null \n");
+        fprintf(participant_logfile,"Error on getting participant address, participant ip_address is null \n");
         return NULL;
     }
     struct sockaddr_in *serverAddr = (struct sockaddr_in *) malloc(sizeof(struct sockaddr_in));
     int worked = inet_aton("127.0.1.1",&serverAddr->sin_addr);
     if(worked != 0 && strcmp(participant->ip_address,"127.0.1.1"))
     {
-        fprintf(stderr,"Error on getting participant address, participant ip_address is Invalid. Address: %s \n",participant->ip_address);
+        fprintf(participant_logfile,"Error on getting participant address, participant ip_address is Invalid. Address: %s \n",participant->ip_address);
         return NULL;
     }
     serverAddr->sin_family = AF_INET;

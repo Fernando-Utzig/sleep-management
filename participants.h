@@ -25,7 +25,7 @@ struct ParticipantData {
 }typedef Participant;
 
 
-
+void setParticipantsLogFile(FILE *file);
 int AddParticipantToTable(Participant *participant);
 int removeParticipantFromTable(Participant *participant);
 unsigned long hash(char *mac);
