@@ -109,13 +109,17 @@ void *discoveryThread(void *arg) {
     struct sockaddr_in clientAddr;
     discovery_package received_package;
     discovery_package *send_package;
-    char managerInfo[BUFFER_SIZE];
+    //char ip_from[BUFFER_SIZE];
+    char *ip_rev;
     createDiscoveryPackage(NEW_ENTRY_COMMAND);
     socklen_t len = sizeof(clientAddr);
     int send_ret,n,operation_result;
     int teste;
     while (1) {
         n = recvfrom(sockfd, &received_package, sizeof(discovery_package), 0, (struct sockaddr*)&clientAddr, &len);
+        ip_rev = inet_ntoa(clientAddr.sin_addr);
+        printf("********\nip_rev = %s",ip_rev);
+        strcpy(received_package.part.ip_address,ip_rev);
         fprintf(discovery_logfile," n= %d",n);
         fprintf(discovery_logfile,"no n \n");
         if (n > 0) {
@@ -186,7 +190,9 @@ int sendDiscoverypackaged(struct sockaddr_in *Manageraddress)
             receive = recvfrom(MySocket, &received_packaged, sizeof(discovery_package), 0, (struct sockaddr *) Manageraddress, &length);
             fprintf(discovery_logfile,"receive command: %d result: %d manager.mac= %s\n",received_packaged.command,received_packaged.result,received_packaged.part.MAC);
             fprintf(discovery_logfile," Manager ip(in integer)= %u\n",Manageraddress->sin_addr.s_addr);
-            fprintf(discovery_logfile," Manager ip(in string)= %s\n",inet_ntoa(Manageraddress->sin_addr));
+            some_addr = inet_ntoa(Manageraddress->sin_addr);
+            fprintf(discovery_logfile," Manager ip(in string)= %s\n",some_addr);
+            strcpy(received_packaged.part.ip_address,some_addr);
             setManager(&received_packaged.part);
             fflush(discovery_logfile);
         }
