@@ -110,6 +110,7 @@ void setMySelf()
         myip = inet_ntoa(*((struct in_addr*)
                         myhost->h_addr_list[0]));
         strcpy(myself.ip_address,myip);
+        myself.is_awaken = 1;
     }
 	
     

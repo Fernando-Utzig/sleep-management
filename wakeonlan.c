@@ -59,17 +59,17 @@ void ReceiveInterruption(int signalvalue)
     keepRunning =0;
 }
 int main(int argc, char *argv[]){
-    pthread_t discoveryThreadId =0, interfaceThreadId=0, monitoringThreadId=0, managementThreadId =0,displayThreadId=0;
+    pthread_t discoveryThreadId =0, interfaceParticipantThreadId=0, interfaceThreadId=0, monitoringThreadId=0, managementThreadId =0,displayThreadId=0;
     
     
     Participant *tmp;
     char read[64];
     printf("Starting ... \n");
     fflush(stdout);
-    setDiscoveryLogFile(openLogFile("discoveryLog_1.txt"));
-    setInterfaceLogFile(openLogFile("interfaceLog_1.txt"));
-    setMonitoringLogFile(openLogFile("monitoringLog_1.txt"));
-    setParticipantsLogFile(openLogFile("participantLog_1.txt"));
+    setDiscoveryLogFile(openLogFile("discoveryLog_2.txt"));
+    setInterfaceLogFile(openLogFile("interfaceLog_2.txt"));
+    setMonitoringLogFile(openLogFile("monitoringLog_2.txt"));
+    setParticipantsLogFile(openLogFile("participantLog_2.txt"));
     init_participantTable();
     setMySelf();
     signal(SIGINT,ReceiveInterruption);
@@ -91,7 +91,8 @@ int main(int argc, char *argv[]){
             exit(1);
         }
         pthread_create(&monitoringThreadId, NULL, ParticipantMonitoringThread, &ManagerSock);
-        pthread_create(&interfaceThreadId, NULL, printManagerThread, NULL);
+        pthread_create(&interfaceParticipantThreadId, NULL, interfaceThreadParticipant, NULL);
+        // pthread_create(&interfaceThreadId, NULL, printManagerThread, NULL);
         while(keepRunning)
         {
         }
@@ -104,7 +105,7 @@ int main(int argc, char *argv[]){
             else
                 printf("Exit failed\n");
     }
-    fprintf(stderr,"PQP Closing Threads\n");
+    fprintf(stderr,"Closing Threads\n");
     fprintf(stderr,"Closing Thread discoveryThreadId %ld\n",discoveryThreadId);
     if(discoveryThreadId != 0)
         pthread_cancel(discoveryThreadId);

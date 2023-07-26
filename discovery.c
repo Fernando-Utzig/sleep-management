@@ -22,8 +22,11 @@ FILE *discovery_logfile ;
 
 void setDiscoveryLogFile(FILE *file)
 {
-    if(file != NULL)
+    if(file != NULL) {
+        printf("discovery log file set\n");
         discovery_logfile =file;
+    }
+        
     else
     {
         discovery_logfile=stderr;
@@ -185,6 +188,7 @@ int sendDiscoverypackaged(struct sockaddr_in *Manageraddress)
             fprintf(discovery_logfile," Manager ip(in integer)= %u\n",Manageraddress->sin_addr.s_addr);
             fprintf(discovery_logfile," Manager ip(in string)= %s\n",inet_ntoa(Manageraddress->sin_addr));
             setManager(&received_packaged.part);
+            fflush(discovery_logfile);
         }
         tries++;
         tv.tv_usec = 0;
