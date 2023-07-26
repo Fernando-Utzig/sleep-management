@@ -485,10 +485,11 @@ struct sockaddr_in *getParticipantAddress(Participant *participant,int port)
         return NULL;
     }
     struct sockaddr_in *serverAddr = (struct sockaddr_in *) malloc(sizeof(struct sockaddr_in));
-    int worked = inet_aton("127.0.1.1",&serverAddr->sin_addr);
+    int worked = inet_aton(participant->ip_address,&serverAddr->sin_addr);
     if(worked != 0 && strcmp(participant->ip_address,"127.0.1.1"))
     {
         fprintf(participant_logfile,"Error on getting participant address, participant ip_address is Invalid. Address: %s \n",participant->ip_address);
+        
         return NULL;
     }
     serverAddr->sin_family = AF_INET;
