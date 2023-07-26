@@ -142,7 +142,7 @@ void *interfaceThreadManager(void *arg) {
     printAllParticipants();
     while(fgetsreturn!=NULL)
     {
-        printf("Commands: EXIT and WAKEUP:\n");
+        printf("Commands: EXIT, SLEEP and WAKEUP:\n");
         //scanf("%s",command);
         fgetsreturn = fgets(command,256,stdin);
         if(fgetsreturn == NULL)//EOF

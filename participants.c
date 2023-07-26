@@ -28,6 +28,7 @@ void setParticipantsLogFile(FILE *file)
 
 void printAllParticipants()
 {
+    system("clear"); // Comando para limpar a tela no Ubuntu
     pthread_mutex_lock(&participantsMutex);
     for (int i=0; i<TABLE_SIZE; i++) {
         printParticipant(ParticipantsTable[i]);
