@@ -30,6 +30,11 @@ void printAllParticipants()
 {
     system("clear"); // Comando para limpar a tela no Ubuntu
     pthread_mutex_lock(&participantsMutex);
+    printf("\n");
+    printf("-------------------------\n");
+    printf("      Participants       \n");
+    printf("-------------------------\n");
+    printf("Hostname \t IP \t MAC \t Status\n");
     for (int i=0; i<TABLE_SIZE; i++) {
         printParticipant(ParticipantsTable[i]);
     }
@@ -378,25 +383,13 @@ void printParticipant(Participant *participant)
 {
     if (participant == NULL)
         return;
-    int headerPrinted = 0;
-    if (!headerPrinted) {// WTF
-        printf("-------------------------\n");
-        printf("      Participants       \n");
-        printf("--------------------------\n");
-        headerPrinted = 1; 
-    }
 
     if (participant->Hostname != NULL)
-        printf("Hostname: %s\n", participant->Hostname);
-        printf("-------------------------\n");
+        printf("%s\t\t", participant->Hostname);
     if (participant->ip_address != NULL)
-        printf("IP: %s\n", participant->ip_address);
-        printf("-------------------------\n");
+        printf("%s\t\t", participant->ip_address);
     if (participant->MAC != NULL)
-        printf("MAC: %s\n", participant->MAC);
-        printf("-------------------------\n");
-
-    printf("Status: ");
+        printf("%s\t\t", participant->MAC);
     if (participant->is_awaken == 0)
         printf("Sleeping\n");
     else
@@ -486,12 +479,14 @@ struct sockaddr_in *getParticipantAddress(Participant *participant,int port)
     }
     struct sockaddr_in *serverAddr = (struct sockaddr_in *) malloc(sizeof(struct sockaddr_in));
     int worked = inet_aton(participant->ip_address,&serverAddr->sin_addr);
-    if(worked != 0 && strcmp(participant->ip_address,"127.0.1.1"))
-    {
-        fprintf(participant_logfile,"Error on getting participant address, participant ip_address is Invalid. Address: %s \n",participant->ip_address);
+    fprintf(participant_logfile, "worked: %d", worked);
+    fflush(participant_logfile);
+    // if(worked != 0 && strcmp(participant->ip_address,"127.0.1.1"))
+    // {
+    //     fprintf(participant_logfile,"Error on getting participant address, participant ip_address is Invalid. Address: %s \n",participant->ip_address);
         
-        return NULL;
-    }
+    //     return NULL;
+    // }
     serverAddr->sin_family = AF_INET;
     serverAddr->sin_port = htons(port);
     return serverAddr;

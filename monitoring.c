@@ -193,6 +193,7 @@ int sleepOrWakupParticipant(Participant *participant, int new_status)
             update_result = updateParticipant(participant);
         }
     }
+    fflush(monitoring_logfile);
     if(update_result =1 && request_result ==1)
         return 1;
     else
