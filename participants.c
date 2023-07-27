@@ -28,7 +28,7 @@ void setParticipantsLogFile(FILE *file)
 
 void printAllParticipants()
 {
-    system("clear"); // Comando para limpar a tela no Ubuntu
+    
     pthread_mutex_lock(&participantsMutex);
     printf("\n");
     printf("-------------------------\n");
@@ -146,11 +146,11 @@ void printManager()
     printParticipant(Manager);
 }
 
-unsigned long hash(char *mac){
+unsigned long hash(char *hostname){
     unsigned long sum =0;
-    for (int j=0;mac[j]!='\0';j++)
+    for (int j=0;hostname[j]!='\0';j++)
     {
-        sum += mac[j];
+        sum += hostname[j];
     }
     return sum % TABLE_SIZE;
 }
@@ -211,7 +211,7 @@ Participant *find_in_next(Participant *root,char *Mac)
 {
     if(root == NULL)
         return NULL;
-    if(strcmp(root->MAC,Mac))
+    if(strcmp(root->Hostname,Mac))
     {
         return root;
     }
@@ -219,18 +219,18 @@ Participant *find_in_next(Participant *root,char *Mac)
         return find_in_next(root->next,Mac);
 }
 
-Participant *find_before_next(Participant *root,char *Mac) // untested
+Participant *find_before_next(Participant *root,char *hostname) // untested
 {
     if(root == NULL)
         return NULL;
     if(root->next == NULL)
         return NULL;
-    if(strcmp(root->next->MAC,Mac))
+    if(strcmp(root->next->Hostname,hostname))
     {
         return root;
     }
     else
-        return find_in_next(root->next,Mac);
+        return find_in_next(root->next,hostname);
 }
 
 int insert_in_next(Participant *old,Participant *new)
@@ -240,7 +240,7 @@ int insert_in_next(Participant *old,Participant *new)
         fprintf(participant_logfile,"insert_in_next FAILED");
         return -1;
     }
-    if(strcmp(old->MAC,new->MAC) == 0)
+    if(strcmp(old->Hostname,new->Hostname) == 0)
     {
         old->is_awaken=1;
         free(new);
@@ -269,13 +269,13 @@ int AddParticipantToTable(Participant *participant)
     }
     int computed_hash;
     Participant* new_participant = CreateCopyParticipant(participant);
-    computed_hash=hash(new_participant->MAC);
+    computed_hash=hash(new_participant->Hostname);
     fprintf(participant_logfile,"computed_hash = %d\n",computed_hash);
     fflush(participant_logfile);
     pthread_mutex_lock(&participantsMutex);
     if(ParticipantsTable[computed_hash] != NULL){
         fprintf(participant_logfile,"Found someone at the table\n");
-        if(strcmp(ParticipantsTable[computed_hash]->MAC,new_participant->MAC) == 0)
+        if(strcmp(ParticipantsTable[computed_hash]->Hostname,new_participant->Hostname) == 0)
         {
             fprintf(participant_logfile,"Already known Participant\n");
             ParticipantsTable[computed_hash]->is_awaken=1;
@@ -310,20 +310,20 @@ int updateParticipant(Participant *participant)
         fprintf(participant_logfile,"Trying to update NULL participant\n");
         return -1;
     }
-    int computed_hash = hash(participant->MAC);
+    int computed_hash = hash(participant->Hostname);
     pthread_mutex_lock(&participantsMutex);
     if(ParticipantsTable[computed_hash]==NULL)
         result = -1;
     else
     {
-        if(strcmp(ParticipantsTable[computed_hash]->MAC,participant->MAC) == 0)
+        if(strcmp(ParticipantsTable[computed_hash]->Hostname,participant->Hostname) == 0)
         {
             ParticipantsTable[computed_hash]->is_awaken=participant->is_awaken;
             result =1;
         }
             
         else{
-            tmp = find_in_next(ParticipantsTable[computed_hash]->next,participant->MAC);
+            tmp = find_in_next(ParticipantsTable[computed_hash]->next,participant->Hostname);
             if(tmp==NULL)
                 result = -2;
             else
@@ -349,7 +349,7 @@ int removeParticipantFromTable(Participant *participant)
         fprintf(participant_logfile,"Trying to remove NULL participant\n");
         return -1;
     }
-    int computed_hash = hash(participant->MAC);
+    int computed_hash = hash(participant->Hostname);
     fprintf(participant_logfile,"computed hash = %d\n",computed_hash);
     fflush(participant_logfile);
     pthread_mutex_lock(&participantsMutex);
@@ -358,7 +358,7 @@ int removeParticipantFromTable(Participant *participant)
     else
     {
         
-        if(strcmp(ParticipantsTable[computed_hash]->MAC,participant->MAC) == 0)
+        if(strcmp(ParticipantsTable[computed_hash]->Hostname,participant->Hostname) == 0)
             {
                 result =1;
                 if(ParticipantsTable[computed_hash]->next == NULL)
@@ -377,7 +377,7 @@ int removeParticipantFromTable(Participant *participant)
                 }
             }
         else{
-            tmp = find_before_next(ParticipantsTable[computed_hash]->next,participant->MAC);
+            tmp = find_before_next(ParticipantsTable[computed_hash]->next,participant->Hostname);
             if(tmp==NULL)
                 result = -2;
             else
@@ -447,22 +447,22 @@ Participant *getManagerCopy()
     return copy;
 }
 
-Participant *getParticipant(char *Mac)
+Participant *getParticipant(char *hostname)
 {
     Participant *tmp;
-    if(Mac == NULL)
+    if(hostname == NULL)
     {
         fprintf(participant_logfile,"ERROR Mac is null ");
         return NULL;
     }
-    int computed_hash=hash(Mac);
+    int computed_hash=hash(hostname);
     pthread_mutex_lock(&participantsMutex);
     if(ParticipantsTable[computed_hash]==NULL)
         return NULL;
-    if(strcmp(ParticipantsTable[computed_hash]->MAC,Mac) == 0)
+    if(strcmp(ParticipantsTable[computed_hash]->Hostname,hostname) == 0)
         tmp=CreateCopyParticipant(ParticipantsTable[computed_hash]);
     else
-        tmp= CreateCopyParticipant(find_in_next(ParticipantsTable[computed_hash]->next,Mac));        
+        tmp= CreateCopyParticipant(find_in_next(ParticipantsTable[computed_hash]->next,hostname));        
     pthread_mutex_unlock(&participantsMutex);
     return tmp;
 }

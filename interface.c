@@ -46,7 +46,9 @@ void *displayParticipantsTable(void *arg) {
     while(1)
     {
         pthread_mutex_lock(&displayMutex);
+        system("clear"); // Comando para limpar a tela no Ubuntu
         printAllParticipants();
+        printf("Commands: EXIT, SLEEP <Hostname> and WAKEUP <Hostname>:\n");
     }
 }
 
@@ -76,7 +78,7 @@ void *interfaceThreadParticipant(void *arg) {
     }
 }
 
-int decodeAction(char* command, char*mac)
+int decodeAction(char* command, char*hostname)
 {
     char wake[]="WAKEUP";
     char sleep[]="SLEEP";
@@ -85,9 +87,9 @@ int decodeAction(char* command, char*mac)
         fprintf(interface_logfile,"command received is NULL");
         return UNDEFINED_COMMAND;
     }
-    if(mac == NULL)
+    if(hostname == NULL)
     {
-        fprintf(interface_logfile,"mac received is NULL");
+        fprintf(interface_logfile,"hostname received is NULL");
         return UNDEFINED_COMMAND;
     }
     if(strcmp(command,"EXIT")==0)
@@ -100,8 +102,8 @@ int decodeAction(char* command, char*mac)
     if(result == 0)
     {
         fprintf(interface_logfile,"command[7] = %c\n",command[7]);
-        strcpy(mac,&command[7]);
-        fprintf(interface_logfile,"wakeup command, mac fould = %s\n",mac);
+        strcpy(hostname,&command[7]);
+        fprintf(interface_logfile,"wakeup command, hostname fould = %s\n",hostname);
         return WAKE_UP_COMMAND;
     }
     result=0;
@@ -111,8 +113,8 @@ int decodeAction(char* command, char*mac)
     }
     if(result == 0)
     {
-        strcpy(mac,&command[6]);
-        fprintf(interface_logfile,"sleep command, mac fould = %s\n",mac);
+        strcpy(hostname,&command[6]);
+        fprintf(interface_logfile,"sleep command, mac fould = %s\n",hostname);
         return SLEEP_COMMAND;
     }
         
@@ -132,30 +134,29 @@ void *printManagerThread(void *arg)
 
 void *interfaceThreadManager(void *arg) {
     char command[256];
-    char mac[256];
+    char hostname[256];
     command[0]='\0';
     Participant *participant;
     char *fgetsreturn ="nao nulo";
     int request_result;
     // Função para exibir a lista de participantes na tela
     fprintf(interface_logfile,"Iniciating InterfaceThreadManager\n");
-    printAllParticipants();
     while(fgetsreturn!=NULL)
     {
-        printf("Commands: EXIT, SLEEP and WAKEUP:\n");
+        
         //scanf("%s",command);
         fgetsreturn = fgets(command,256,stdin);
         if(fgetsreturn == NULL)//EOF
             raise(SIGINT);
         removeEnterChar(command);
-        switch (decodeAction(command,mac))
+        switch (decodeAction(command,hostname))
         {
         case EXIT_COMMAND:
             raise(SIGINT);
             break;
         case WAKE_UP_COMMAND:
-            removeEnterChar(mac);
-            participant = getParticipant(mac);
+            removeEnterChar(hostname);
+            participant = getParticipant(hostname);
             if(participant ==NULL)
             {
                 printf("Did not found participant\n");
@@ -174,8 +175,8 @@ void *interfaceThreadManager(void *arg) {
             }
         break;
         case SLEEP_COMMAND:
-            removeEnterChar(mac);
-            participant = getParticipant(mac);
+            removeEnterChar(hostname);
+            participant = getParticipant(hostname);
             if(participant ==NULL)
             {
                 printf("Did not found participant\n");
@@ -202,7 +203,7 @@ void *interfaceThreadManager(void *arg) {
             break;
         }
         if(getchar() !='\n') // to read a trailling \\n that make the fgets skip a input
-            printf("erro lol kkkk");
+            printf("got one char more than it should\n");
     }
 }
 

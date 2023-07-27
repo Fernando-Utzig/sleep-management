@@ -120,9 +120,9 @@ void *discoveryThread(void *arg) {
         n = recvfrom(sockfd, &received_package, sizeof(discovery_package), 0, (struct sockaddr*)&clientAddr, &len);        
         if (n > 0) {
             ip_rev = inet_ntoa(clientAddr.sin_addr);
-            printf("********\nip_rev = %s",ip_rev);
+            fprintf(discovery_logfile,"ip_rev = %s\n",ip_rev);
             strcpy(received_package.part.ip_address,ip_rev);
-            fprintf(discovery_logfile," n= %d",n);
+            fprintf(discovery_logfile," n= %d\n",n);
             fprintf(discovery_logfile,"no n \n");
             fprintf(discovery_logfile,"received packaged \n");
             fprintf(discovery_logfile,"command received: %d Mac:%s\n",received_package.command,received_package.part.MAC);
