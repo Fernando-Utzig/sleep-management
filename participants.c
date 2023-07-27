@@ -34,7 +34,7 @@ void printAllParticipants()
     printf("-------------------------\n");
     printf("      Participants       \n");
     printf("-------------------------\n");
-    printf("Hostname \t IP \t MAC \t Status\n");
+    printf("Hostname  |  IP  |  MAC  |  Status\n");
     for (int i=0; i<TABLE_SIZE; i++) {
         printParticipant(ParticipantsTable[i]);
     }
@@ -393,11 +393,11 @@ void printParticipant(Participant *participant)
         return;
 
     if (participant->Hostname != NULL)
-        printf("%s\t\t", participant->Hostname);
+        printf("%s | ", participant->Hostname);
     if (participant->ip_address != NULL)
-        printf("%s\t\t", participant->ip_address);
+        printf("%s | ", participant->ip_address);
     if (participant->MAC != NULL)
-        printf("%s\t\t", participant->MAC);
+        printf("%s | ", participant->MAC);
     if (participant->is_awaken == 0)
         printf("Sleeping\n");
     else
