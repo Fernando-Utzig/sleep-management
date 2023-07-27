@@ -44,6 +44,7 @@ void printAllParticipants()
 void setManager(Participant *received)
 {
     Manager = CreateCopyParticipant(received);
+    Manager->next=NULL;
 }
 
 
@@ -125,13 +126,14 @@ void setMySelf()
                         myhost->h_addr_list[0]));
         strcpy(myself.ip_address,myip);
         myself.is_awaken = 1;
+
     }
 	
     
     fprintf(participant_logfile,"MyMac is =%s\n",myself.MAC);
     fprintf(participant_logfile,"hostname is = %s\n",myself.Hostname);
     fprintf(participant_logfile,"myip is = %s\n",myself.ip_address);
-    
+    myself.next = NULL;
 }
 void printManager()
 {
