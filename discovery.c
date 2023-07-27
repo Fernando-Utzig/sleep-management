@@ -14,6 +14,7 @@ typedef struct discovery_package_struct
     int command;
     Participant part;
     int result;
+    char extra[256];
 } discovery_package;
 
 discovery_package *createDiscoveryPackage(int command);
@@ -116,13 +117,13 @@ void *discoveryThread(void *arg) {
     int send_ret,n,operation_result;
     int teste;
     while (1) {
-        n = recvfrom(sockfd, &received_package, sizeof(discovery_package), 0, (struct sockaddr*)&clientAddr, &len);
-        ip_rev = inet_ntoa(clientAddr.sin_addr);
-        printf("********\nip_rev = %s",ip_rev);
-        strcpy(received_package.part.ip_address,ip_rev);
-        fprintf(discovery_logfile," n= %d",n);
-        fprintf(discovery_logfile,"no n \n");
+        n = recvfrom(sockfd, &received_package, sizeof(discovery_package), 0, (struct sockaddr*)&clientAddr, &len);        
         if (n > 0) {
+            ip_rev = inet_ntoa(clientAddr.sin_addr);
+            printf("********\nip_rev = %s",ip_rev);
+            strcpy(received_package.part.ip_address,ip_rev);
+            fprintf(discovery_logfile," n= %d",n);
+            fprintf(discovery_logfile,"no n \n");
             fprintf(discovery_logfile,"received packaged \n");
             fprintf(discovery_logfile,"command received: %d Mac:%s\n",received_package.command,received_package.part.MAC);
             if(received_package.command == NEW_ENTRY_COMMAND)
@@ -131,6 +132,7 @@ void *discoveryThread(void *arg) {
                 operation_result=removeParticipantFromTable(&received_package.part);
             send_package = createDiscoveryPackage(received_package.command);
             send_package->result = operation_result;
+            strcpy(send_package->extra,ip_rev);
             fprintf(discovery_logfile,"operation_result = %d\n",operation_result);
             send_ret = sendto(sockfd, send_package, sizeof(discovery_package), 0,(struct sockaddr *) &clientAddr, sizeof(struct sockaddr));
             free(send_package);
@@ -193,6 +195,7 @@ int sendDiscoverypackaged(struct sockaddr_in *Manageraddress)
             some_addr = inet_ntoa(Manageraddress->sin_addr);
             fprintf(discovery_logfile," Manager ip(in string)= %s\n",some_addr);
             strcpy(received_packaged.part.ip_address,some_addr);
+            setMySelfIpOnLan(received_packaged.extra);
             setManager(&received_packaged.part);
             fflush(discovery_logfile);
         }

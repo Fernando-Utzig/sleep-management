@@ -37,6 +37,7 @@ int updateParticipant(Participant *participant);
 Participant *Create_Participant(char* Message,int message_lenght);
 void printManager();
 void setMySelf();
+void setMySelfIpOnLan(char *ip);
 void setManager(Participant *received);
 void setMyselfActive();
 void setMyselfSleep();

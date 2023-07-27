@@ -69,7 +69,7 @@ void getMyMac(char *myMac)
     do
     {
         ep = readdir (dp);
-    } while (ep != NULL && ep->d_name[0]=='.');
+    } while (ep != NULL && (ep->d_name[0]=='.' || !(strcmp(ep->d_name,"lo"))));
     if(ep == NULL)
     {
         printf("MY MAC READ FAILED- failed to get connection folder in /sys/class/net/\n");
@@ -96,6 +96,14 @@ void getMyMac(char *myMac)
     }
     printf("mymac = %s\n",myMac);
     return;
+}
+
+void setMySelfIpOnLan(char *ip)
+{
+    if(ip !=NULL)
+    {
+        strcpy(myself.ip_address,ip);
+    }
 }
 
 void setMySelf()
