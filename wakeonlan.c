@@ -92,7 +92,7 @@ int main(int argc, char *argv[]){
         }
         pthread_create(&monitoringThreadId, NULL, ParticipantMonitoringThread, &ManagerSock);
         pthread_create(&interfaceParticipantThreadId, NULL, interfaceThreadParticipant, NULL);
-        // pthread_create(&interfaceThreadId, NULL, printManagerThread, NULL);
+        pthread_create(&interfaceThreadId, NULL, printManagerThread, NULL);
         while(keepRunning)
         {
         }

@@ -135,6 +135,12 @@ void setMySelf()
 }
 void printManager()
 {
+    system("clear"); // Comando para limpar a tela no Ubuntu
+    printf("\n");
+    printf("-------------------------\n");
+    printf("        Manager          \n");
+    printf("-------------------------\n");
+    printf("Hostname  |  IP  |  MAC  |  Status\n");
     printParticipant(Manager);
 }
 
