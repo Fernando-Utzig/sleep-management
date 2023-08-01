@@ -48,7 +48,7 @@ void *displayParticipantsTable(void *arg) {
         pthread_mutex_lock(&displayMutex);
         system("clear"); // Comando para limpar a tela no Ubuntu
         printAllParticipants();
-        printf("Commands: EXIT, SLEEP <Hostname> and WAKEUP <Hostname>:\n");
+        printf("Commands: WAKEUP <Hostname>:\n");
     }
 }
 
@@ -151,9 +151,6 @@ void *interfaceThreadManager(void *arg) {
         removeEnterChar(command);
         switch (decodeAction(command,hostname))
         {
-        case EXIT_COMMAND:
-            raise(SIGINT);
-            break;
         case WAKE_UP_COMMAND:
             removeEnterChar(hostname);
             participant = getParticipant(hostname);
@@ -164,6 +161,14 @@ void *interfaceThreadManager(void *arg) {
             else
             {
                 request_result = sleepOrWakupParticipant(participant,1);
+                // Comando para enviar o pacote Wake-on-LAN
+                char command[128];
+                char prefix[] = "wakeonlan ";
+                strcpy(command, prefix);
+                strcat(command, participant->MAC);
+
+                // Executando o comando
+                system(command);
                 if(request_result != 1)
                 {
                     printf("Request failed\n");
@@ -173,27 +178,6 @@ void *interfaceThreadManager(void *arg) {
                     printf("Request Succefully\n");
                 }
             }
-        break;
-        case SLEEP_COMMAND:
-            removeEnterChar(hostname);
-            participant = getParticipant(hostname);
-            if(participant ==NULL)
-            {
-                printf("Did not found participant\n");
-            }
-            else
-            {
-                request_result = sleepOrWakupParticipant(participant,0);
-                if(request_result != 1)
-                {
-                    printf("Request failed\n");
-                }
-                else
-                {
-                    printf("Request Succefully\n");
-                }
-            }
-            
             break;
         default:
             if(fgetsreturn!=NULL && fgetsreturn[0]!='\0'){
