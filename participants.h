@@ -27,7 +27,8 @@ struct ParticipantData {
 struct LinkedNode
 {
     struct ParticipantData *participant;
-    pthread_mutex_t participantMutex; 
+    pthread_mutex_t participantMutex;
+    int time_to_sleep;    
 }
 
 void setParticipantsLogFile(FILE *file);
