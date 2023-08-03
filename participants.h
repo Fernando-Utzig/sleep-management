@@ -24,6 +24,11 @@ struct ParticipantData {
     struct ParticipantData *next;
 }typedef Participant;
 
+struct LinkedNode
+{
+    struct ParticipantData *participant;
+    pthread_mutex_t participantMutex; 
+}
 
 void setParticipantsLogFile(FILE *file);
 int AddParticipantToTable(Participant *participant);
