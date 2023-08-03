@@ -17,8 +17,16 @@
 
 struct ParticipantData typedef Participant;
 
+struct struct_SleepStatusRequest
+{
+    int isSleep;
+} typedef SleepStatusRequest;
+
 void *ParticipantMonitoringThread(void *arg);
 int sleepOrWakupParticipant(Participant *participant, int new_status);
 void closeMonitoringSocket();
 void setMonitoringLogFile(FILE *file);
+void *monitorParticipant(void *arg);
+
+
 #endif

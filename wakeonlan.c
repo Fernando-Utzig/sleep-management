@@ -98,12 +98,12 @@ int main(int argc, char *argv[]){
         }
         printf("Sending Exit request\n");
         fflush(stdout);
-        tmp = getManagerCopy();
-        if(tmp != NULL)
-            if(sendExitRequest(tmp) == 1)
-                printf("Exit successful!\n");
-            else
-                printf("Exit failed\n");
+        //tmp = getManagerCopy();
+        //if(tmp != NULL)
+        //    if(sendExitRequest(tmp) == 1)
+        //        printf("Exit successful!\n");
+        //    else
+        //        printf("Exit failed\n");
     }
     fprintf(stderr,"Closing Threads\n");
     fprintf(stderr,"Closing Thread discoveryThreadId %ld\n",discoveryThreadId);

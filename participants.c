@@ -12,6 +12,7 @@ pthread_mutex_t myselfMutex;
 
 
 Participant * CreateCopyParticipant(Participant *original);
+void createMonitoringInfo(Participant *participant);
 
 FILE *participant_logfile ;
 void setParticipantsLogFile(FILE *file)
@@ -251,6 +252,7 @@ int insert_in_next(Participant *old,Participant *new)
         if(old->next ==NULL)
         {
             old->next = new;
+            createMonitoringInfo(new);
             return 1;
         }
         else
@@ -285,6 +287,7 @@ int AddParticipantToTable(Participant *participant)
         }
         else{
             return_value=insert_in_next(ParticipantsTable[computed_hash],new_participant);
+            
         }
     }
     else
@@ -292,6 +295,7 @@ int AddParticipantToTable(Participant *participant)
         fprintf(participant_logfile,"Space is empty!\n");
         ParticipantsTable[computed_hash] = new_participant;
         return_value=1;
+        createMonitoringInfo(new_participant);
     }
     pthread_mutex_unlock(&participantsMutex);
     fprintf(participant_logfile,"Adding participant return value : %d\n",return_value);
@@ -507,5 +511,15 @@ struct sockaddr_in *getParticipantAddress(Participant *participant,int port)
     serverAddr->sin_port = htons(port);
     return serverAddr;
 }
+
+void createMonitoringInfo(Participant *participant)
+{
+    MonitoringInfo *moni =(MonitoringInfo *) malloc(sizeof(MonitoringInfo));
+    participant->monitoration= moni;
+    moni->participant=CreateCopyParticipant(participant); //this is just so wrong
+    moni->time_to_sleep=3;
+    pthread_create(&moni->monitoringThread, NULL, monitorParticipant, moni);
+}
+
 
 #endif

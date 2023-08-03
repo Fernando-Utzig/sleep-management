@@ -12,9 +12,13 @@
 #include <dirent.h>
 #include <sys/types.h>
 #include "interface.h"
+#include "monitoring.h"
 
 #define Participant_Name_size 64
 #define TABLE_SIZE 997
+
+
+struct monitoringInformation typedef MonitoringInfo;
 
 struct ParticipantData {
     char Hostname[Participant_Name_size];
@@ -22,14 +26,16 @@ struct ParticipantData {
     char ip_address[Participant_Name_size];
     int is_awaken;
     struct ParticipantData *next;
+    struct MonitoringInfo *monitoration;
 }typedef Participant;
 
-struct LinkedNode
+struct monitoringInformation
 {
-    struct ParticipantData *participant;
-    pthread_mutex_t participantMutex;
-    int time_to_sleep;    
-}
+    Participant *participant;
+    pthread_mutex_t participantMutex; //not used, will be for next fix
+    int time_to_sleep;
+    pthread_t monitoringThread;    
+} typedef MonitoringInfo;
 
 void setParticipantsLogFile(FILE *file);
 int AddParticipantToTable(Participant *participant);
