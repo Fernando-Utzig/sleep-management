@@ -26,7 +26,7 @@ struct ParticipantData {
     char ip_address[Participant_Name_size];
     int is_awaken;
     struct ParticipantData *next;
-    struct MonitoringInfo *monitoration;
+    MonitoringInfo *monitoration;
 }typedef Participant;
 
 struct monitoringInformation

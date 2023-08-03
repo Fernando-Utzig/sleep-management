@@ -13,6 +13,7 @@ pthread_mutex_t myselfMutex;
 
 Participant * CreateCopyParticipant(Participant *original);
 void createMonitoringInfo(Participant *participant);
+void destroyMonitoringInfo(Participant *participant);
 
 FILE *participant_logfile ;
 void setParticipantsLogFile(FILE *file)
