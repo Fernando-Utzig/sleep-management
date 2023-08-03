@@ -369,6 +369,7 @@ int removeParticipantFromTable(Participant *participant)
                 {
                     fprintf(participant_logfile,"removin found in list, no next\n");
                     fflush(participant_logfile);
+                    destroyMonitoringInfo(ParticipantsTable[computed_hash]);
                     free(ParticipantsTable[computed_hash]);
                     ParticipantsTable[computed_hash]=NULL;
                 }
@@ -377,6 +378,7 @@ int removeParticipantFromTable(Participant *participant)
                     fprintf(participant_logfile,"removin found in list, next now in the list\n");
                     tmp = ParticipantsTable[computed_hash];
                     ParticipantsTable[computed_hash] = ParticipantsTable[computed_hash]->next;
+                    destroyMonitoringInfo(ParticipantsTable[computed_hash]);
                     free(tmp);
                 }
             }
@@ -387,8 +389,11 @@ int removeParticipantFromTable(Participant *participant)
             else
             {//untested
                 result =1;
+                
                 tmp2 = tmp->next;
+                destroyMonitoringInfo(tmp2);
                 tmp->next = tmp2->next;
+                
                 free(tmp2);
             }
         }    
@@ -521,5 +526,11 @@ void createMonitoringInfo(Participant *participant)
     pthread_create(&moni->monitoringThread, NULL, monitorParticipant, moni);
 }
 
+void destroyMonitoringInfo(Participant *participant)
+{
+
+    pthread_cancel(participant->monitoration->monitoringThread);
+    free(participant->monitoration);
+}
 
 #endif
