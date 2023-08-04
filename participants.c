@@ -12,6 +12,8 @@ pthread_mutex_t myselfMutex;
 
 
 Participant * CreateCopyParticipant(Participant *original);
+void createMonitoringInfo(Participant *participant);
+void destroyMonitoringInfo(Participant *participant);
 
 FILE *participant_logfile ;
 void setParticipantsLogFile(FILE *file)
@@ -251,6 +253,7 @@ int insert_in_next(Participant *old,Participant *new)
         if(old->next ==NULL)
         {
             old->next = new;
+            createMonitoringInfo(new);
             return 1;
         }
         else
@@ -285,6 +288,7 @@ int AddParticipantToTable(Participant *participant)
         }
         else{
             return_value=insert_in_next(ParticipantsTable[computed_hash],new_participant);
+            
         }
     }
     else
@@ -292,6 +296,7 @@ int AddParticipantToTable(Participant *participant)
         fprintf(participant_logfile,"Space is empty!\n");
         ParticipantsTable[computed_hash] = new_participant;
         return_value=1;
+        createMonitoringInfo(new_participant);
     }
     pthread_mutex_unlock(&participantsMutex);
     fprintf(participant_logfile,"Adding participant return value : %d\n",return_value);
@@ -365,6 +370,7 @@ int removeParticipantFromTable(Participant *participant)
                 {
                     fprintf(participant_logfile,"removin found in list, no next\n");
                     fflush(participant_logfile);
+                    destroyMonitoringInfo(ParticipantsTable[computed_hash]);
                     free(ParticipantsTable[computed_hash]);
                     ParticipantsTable[computed_hash]=NULL;
                 }
@@ -373,6 +379,7 @@ int removeParticipantFromTable(Participant *participant)
                     fprintf(participant_logfile,"removin found in list, next now in the list\n");
                     tmp = ParticipantsTable[computed_hash];
                     ParticipantsTable[computed_hash] = ParticipantsTable[computed_hash]->next;
+                    destroyMonitoringInfo(ParticipantsTable[computed_hash]);
                     free(tmp);
                 }
             }
@@ -383,8 +390,11 @@ int removeParticipantFromTable(Participant *participant)
             else
             {//untested
                 result =1;
+                
                 tmp2 = tmp->next;
+                destroyMonitoringInfo(tmp2);
                 tmp->next = tmp2->next;
+                
                 free(tmp2);
             }
         }    
@@ -506,6 +516,22 @@ struct sockaddr_in *getParticipantAddress(Participant *participant,int port)
     serverAddr->sin_family = AF_INET;
     serverAddr->sin_port = htons(port);
     return serverAddr;
+}
+
+void createMonitoringInfo(Participant *participant)
+{
+    MonitoringInfo *moni =(MonitoringInfo *) malloc(sizeof(MonitoringInfo));
+    participant->monitoration= moni;
+    moni->participant=CreateCopyParticipant(participant); //this is just so wrong
+    moni->time_to_sleep=3;
+    pthread_create(&moni->monitoringThread, NULL, monitorParticipant, moni);
+}
+
+void destroyMonitoringInfo(Participant *participant)
+{
+
+    pthread_cancel(participant->monitoration->monitoringThread);
+    free(participant->monitoration);
 }
 
 #endif

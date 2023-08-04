@@ -8,7 +8,7 @@
 #define CONFIRMATION_TRIES 3
 
 int manager_socket =-1;
-
+int max_port=4026;
 FILE *monitoring_logfile ;
 void setMonitoringLogFile(FILE *file)
 {
@@ -86,33 +86,16 @@ void *ParticipantMonitoringThread(void *arg) {
     int sockfd = createSocketMon(PORT_CLIENT_MON,clientAddr);
     fprintf(monitoring_logfile,"Port Created\n");
     
-    char buffer[BUFFER_SIZE_MON];
+    SleepStatusRequest request;
     socklen_t len = sizeof(struct sockaddr_in);
     int send_ret,n;
-    char *response;
     while (1) {
-        memset(buffer, 0, BUFFER_SIZE_MON);
-        response="Invalid Command received\n";
-        n = recvfrom(sockfd, buffer, BUFFER_SIZE_MON, 0, (struct sockaddr*)clientAddr, &len);
+        n = recvfrom(sockfd, &request,  sizeof(SleepStatusRequest), 0, (struct sockaddr*)clientAddr, &len);
+        request.isSleep=0;
         fprintf(monitoring_logfile," n= %d\n",n);
         if (n > 0) {
-            fprintf(monitoring_logfile,"received packaged ");
-            removeEnterCharMon(buffer);
-            fprintf(monitoring_logfile,"message = %s\n",buffer);
-            if(strcmp(buffer,"sleep")==0)
-            {
-                response="Sleep Command received\n";
-                setMyselfSleep();
-            }
-                
-            if(strcmp(buffer,"wakeup")==0)
-            {
-                response="Wakeup Command received\n";
-                setMyselfActive();
-            }
-                
-            fprintf(monitoring_logfile,"response= %d\n",strcmp(buffer,"wakeup"));
-            send_ret =sendto(sockfd, response, strlen(response), 0,(struct sockaddr *) clientAddr, sizeof(struct sockaddr));
+            fprintf(monitoring_logfile,"received packaged \n");            
+            send_ret =sendto(sockfd, &request, sizeof(SleepStatusRequest), 0,(struct sockaddr *) clientAddr, sizeof(struct sockaddr));
             fprintf(monitoring_logfile,"send_ret = %d\n",send_ret);
         }
         fflush(monitoring_logfile);
@@ -200,5 +183,58 @@ int sleepOrWakupParticipant(Participant *participant, int new_status)
         return -1;
 }
 
+void *monitorParticipant(void *arg)
+{
+    MonitoringInfo *monoration = (MonitoringInfo *) arg;
+    SleepStatusRequest request;
+    int send_ret,receive_ret;
+    fprintf(monitoring_logfile,"created monitorParticipant\n");
+    struct sockaddr_in *participantAddress = getParticipantAddress(monoration->participant,PORT_CLIENT_MON); //this will read only, so no risk
+    struct sockaddr_in responseAddress;
+    socklen_t len = sizeof(responseAddress);
+    int threadPort = createSocketMon(max_port,participantAddress);
+    max_port++; // maybe this should be safed with a mutex
+    struct timeval tv;
+    tv.tv_sec = 1;
+    tv.tv_usec = 0;    
+    setsockopt(threadPort, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+    while(1)
+    {
+        fprintf(monitoring_logfile,"Sending SleepStatusRequest to participant: %s\n",monoration->participant->Hostname);
+        send_ret =sendto(threadPort, &request, sizeof(SleepStatusRequest), 0,(struct sockaddr *) participantAddress, sizeof(struct sockaddr));
+        if (send_ret < 0)
+        {
+            fprintf(monitoring_logfile,"ERROR sendto SleepStatusRequest: %d \n",send_ret);
+        }
+            
+        else
+        {
+            receive_ret = recvfrom(threadPort, &request, sizeof(SleepStatusRequest), 0, (struct sockaddr *) &responseAddress, &len);
+            if (receive_ret < 0)
+            {
+                monoration->time_to_sleep--;
+                fprintf(monitoring_logfile,"failed to receive SleepStatusRequest from %s time_to_sleep: %d\n",monoration->participant->Hostname,monoration->time_to_sleep);
+                if(monoration->time_to_sleep<=0 && monoration->participant->is_awaken==1)
+                {
+                    fprintf(monitoring_logfile," %s is now declared Sleeping\n",monoration->participant->Hostname);
+                    monoration->participant->is_awaken=0;
+                    updateParticipant(monoration->participant);
+                }
+            }
+            else
+            {
+                monoration->time_to_sleep=3;
+                if(monoration->participant->is_awaken==0)
+                {
+                    fprintf(monitoring_logfile," %s is now declared Active\n",monoration->participant->Hostname);
+                    monoration->participant->is_awaken=1;
+                    updateParticipant(monoration->participant);
+                }
+            }
+        }
+        fflush(monitoring_logfile);
+        tv.tv_usec = 0;
+    }
 
+}
 #endif
