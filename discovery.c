@@ -58,7 +58,7 @@ int createSocket(int port, char serverName[]) {
     if(serverName == NULL)
         serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
     else{
-        printf("getting host name %s\n", serverName);
+        //printf("getting host name %s\n", serverName);
         server = gethostbyname(serverName);
         if(server == NULL)
         {
