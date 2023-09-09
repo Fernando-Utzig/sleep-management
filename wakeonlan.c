@@ -58,9 +58,11 @@ void ReceiveInterruption(int signalvalue)
     fflush(stdout);
     keepRunning =0;
 }
+
+
 int main(int argc, char *argv[]){
     pthread_t discoveryThreadId =0, interfaceParticipantThreadId=0, interfaceThreadId=0, monitoringThreadId=0, managementThreadId =0,displayThreadId=0;
-    
+    int assume_controle = 0;
     
     Participant *tmp;
     char read[64];
@@ -75,35 +77,54 @@ int main(int argc, char *argv[]){
     signal(SIGINT,ReceiveInterruption);
     if (argc > 1 && strcmp(argv[1], "manager") == 0) {
         isManager = 1;
+        keepRunning = 1;
+        sleep(3);
         printf("Estação iniciada como Manager\n");
         pthread_create(&discoveryThreadId, NULL, discoveryThread, NULL);
         pthread_create(&interfaceThreadId, NULL, interfaceThreadManager, NULL);
         pthread_create(&displayThreadId, NULL, displayParticipantsTable, NULL);
         while(keepRunning)
         {
-            //what we could use this for?
+             //what we could use this for?
         }
     } else {
         int is_awaken = 1;
+        keepRunning = 1;
         if(sendDiscoverypackaged(&ManagerSock) == -1)
         {
-            printf("\nFailed to discover Manager, Closing");
-            exit(1);
+            printf("\nFailed to discover Manager");
+            //exit(1);
+            assume_controle = 1;
+            keepRunning = 0;
         }
         pthread_create(&monitoringThreadId, NULL, ParticipantMonitoringThread, &ManagerSock);
         pthread_create(&interfaceParticipantThreadId, NULL, interfaceThreadParticipant, NULL);
         pthread_create(&interfaceThreadId, NULL, printManagerThread, NULL);
         while(keepRunning)
         {
-        }
-        printf("Sending Exit request\n");
-        fflush(stdout);
-        tmp = getManagerCopy();
-        if(tmp != NULL)
-            if(sendExitRequest(tmp) == 1)
-                printf("Exit successful!\n");
+            // checa se o manager está na rede ainda, se tiver saído, fazer eleição
+            if(sendDiscoverypackaged(&ManagerSock) == -1)
+            {  
+                printf("\nPerdeu contato com o manager\n");
+                assume_controle = 1;
+                keepRunning = 0;
+            }
             else
-                printf("Exit failed\n");
+            {
+                sleep(1);
+            }
+            
+        }
+        if (assume_controle != 1){
+            printf("Sending Exit request\n");
+            fflush(stdout);
+            tmp = getManagerCopy();
+            if(tmp != NULL)
+                if(sendExitRequest(tmp) == 1)
+                    printf("Exit successful!\n");
+                else
+                    printf("Exit failed\n");
+        }
     }
     fprintf(stderr,"Closing Threads\n");
     fprintf(stderr,"Closing Thread discoveryThreadId %ld\n",discoveryThreadId);
@@ -125,4 +146,12 @@ int main(int argc, char *argv[]){
     printf("Goodbye User!\n");
     fflush(stdout);
     fflush(stderr);
+
+    if (assume_controle == 1)
+    {
+        assume_controle = 0;
+        char *argv[] = { "./sleep_server", "manager", NULL };
+        main(2, argv);
+    }
+
 };
