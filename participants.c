@@ -507,12 +507,6 @@ struct sockaddr_in *getParticipantAddress(Participant *participant,int port)
     int worked = inet_aton(participant->ip_address,&serverAddr->sin_addr);
     fprintf(participant_logfile, "worked: %d", worked);
     fflush(participant_logfile);
-    // if(worked != 0 && strcmp(participant->ip_address,"127.0.1.1"))
-    // {
-    //     fprintf(participant_logfile,"Error on getting participant address, participant ip_address is Invalid. Address: %s \n",participant->ip_address);
-        
-    //     return NULL;
-    // }
     serverAddr->sin_family = AF_INET;
     serverAddr->sin_port = htons(port);
     return serverAddr;
