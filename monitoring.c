@@ -169,30 +169,30 @@ int sendRequest(char* request,Participant *participant)
 }
 
 
-int sleepOrWakupParticipant(Participant *participant, int new_status)
-{
-    Operation_result update_result;
-    int request_result;
-    if(new_status ==1)
-        request_result = sendRequest("sleep",participant);
-    if(new_status == 0)
-        request_result =  sendRequest("wakeup",participant);
-    if(request_result == -1)
-        return -1;
-    else
-    {
-        if(request_result == 1)
-        {
-            participant->is_awaken=new_status;
-            update_result = updateParticipant(participant);
-        }
-    }
-    fflush(monitoring_logfile);
-    if(update_result.result =1 && request_result ==1)
-        return 1;
-    else
-        return -1;
-}
+// int sleepOrWakupParticipant(Participant *participant, int new_status)
+// {
+//     int update_result;
+//     int request_result;
+//     if(new_status ==1)
+//         request_result = sendRequest("sleep",participant);
+//     if(new_status == 0)
+//         request_result =  sendRequest("wakeup",participant);
+//     if(request_result == -1)
+//         return -1;
+//     else
+//     {
+//         if(request_result == 1)
+//         {
+//             participant->is_awaken=new_status;
+//             update_result = updateParticipant(participant);
+//         }
+//     }
+//     fflush(monitoring_logfile);
+//     if(update_result =1 && request_result ==1)
+//         return 1;
+//     else
+//         return -1;
+// }
 
 void *monitorParticipant(void *arg)
 {
