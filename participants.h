@@ -13,6 +13,7 @@
 #include <sys/types.h>
 #include "interface.h"
 #include "monitoring.h"
+#include<semaphore.h>
 
 #define Participant_Name_size 64
 #define TABLE_SIZE 997
@@ -72,10 +73,13 @@ void setManager(Participant *received);
 void setMyselfActive();
 void setMyselfSleep();
 void setMyselfAsManager();
+void ListReaderLeaveRoom();
+void ListReaderLeaveRoom();
 Participant *getMyselfCopy();
 Participant *getManagerCopy();
 List_Participant* getParticipant_list();
 void copyParticipant();
 struct sockaddr_in *getParticipantAddress(Participant *participant,int port);
-
+void clearMonitoringInfo();
+void createAllMonitoringInfo();
 #endif

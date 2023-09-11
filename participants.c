@@ -7,14 +7,18 @@
 Participant* ParticipantsTable[TABLE_SIZE];
 List_Participant List;
 pthread_mutex_t participantsMutex;
+pthread_mutex_t writerIsqueueMutex;
+pthread_mutex_t readersMutex;
 Participant myself;
 Participant *Manager;
 pthread_mutex_t myselfMutex;
-
-
+sem_t ReadersAreInRoom;
+int readers;
 Participant * CreateCopyParticipant(Participant *original);
 void createMonitoringInfo(Participant *participant);
 void destroyMonitoringInfo(Participant *participant);
+void ListReaderEnterRoom();
+void ListReaderLeaveRoom();
 
 FILE *participant_logfile ;
 void setParticipantsLogFile(FILE *file)
@@ -31,8 +35,7 @@ void setParticipantsLogFile(FILE *file)
 
 void printAllParticipants()
 {
-    
-    pthread_mutex_lock(&participantsMutex);
+    ListReaderEnterRoom();
     printf("\n");
     printf("-------------------------\n");
     if(myself.is_manager)
@@ -45,7 +48,7 @@ void printAllParticipants()
         if(List.list[i].id>0)
             printParticipant(&List.list[i]);
     }
-    pthread_mutex_unlock(&participantsMutex);
+    ListReaderLeaveRoom();
 }
 
 void setManager(Participant *received)
@@ -58,6 +61,26 @@ List_Participant* getParticipant_list()
     return &List;
 }
 
+
+void ListReaderEnterRoom()
+{
+    pthread_mutex_lock(&participantsMutex);
+    pthread_mutex_unlock(&participantsMutex);
+    pthread_mutex_lock(&readersMutex);
+    readers+=1;
+    if(readers==1)
+        sem_wait(&ReadersAreInRoom);
+    pthread_mutex_unlock(&readersMutex);
+}
+
+void ListReaderLeaveRoom()
+{
+    pthread_mutex_lock(&readersMutex);
+    readers-=1;
+    if(readers==0)
+        sem_post(&ReadersAreInRoom);
+    pthread_mutex_unlock(&readersMutex);
+}
 
 void getMyMac(char *myMac)
 {
@@ -185,11 +208,14 @@ void init_participantList(void)
     for(i=0;i<LIST_SIZE;i++)
     {
         List.list[i].id=-1;
+        List.list[i].monitoration=NULL;
     }
     List.list_version=0;
     List.list_size=0;
     List.maxId=1;
     fprintf(participant_logfile,"participants List iniciated\n");
+    readers=0;
+    sem_init(&ReadersAreInRoom, 0, 1);
 } 
 
 int get_index(char* Message,int message_lenght)
@@ -251,19 +277,22 @@ Operation_result AddParticipantToTable(Participant *participant)
     }
     int i;
     int found=-1;
-    pthread_mutex_lock(&participantsMutex);
+    pthread_mutex_lock(&participantsMutex);//block readers
+    sem_wait(&ReadersAreInRoom);//wait until all readers leave
     for(i=0;i<LIST_SIZE;i++)
     {
-        if(0)//List.list[i].id != -1 && strcmp(List.list[i].Hostname,participant->Hostname) == 0)
+        if(List.list[i].id != -1 && (List.list[i].id ==participant->id))//List.list[i].id != -1 && strcmp(List.list[i].Hostname,participant->Hostname) == 0)
         {
+            res.id=List.list[i].id;
             found=i;
             break;
         }
     }
     if(found!=-1)
     {
-        fprintf(participant_logfile,"achou mesmo hostname\n");
+        fprintf(participant_logfile,"achou mesmo id/hostname\n");
         fflush(participant_logfile);
+        
         res.result= 2;
     }
     else
@@ -296,7 +325,8 @@ Operation_result AddParticipantToTable(Participant *participant)
         
     }
     
-    pthread_mutex_unlock(&participantsMutex);
+    pthread_mutex_unlock(&participantsMutex);// now all readers/writers can enter
+    sem_post(&ReadersAreInRoom);//room is empty
     fprintf(participant_logfile,"Adding participant result value : %d id; %d\n",res.result,res.id);
     fflush(participant_logfile);
     display();
@@ -320,6 +350,7 @@ Operation_result updateParticipant(Participant *participant)
     }
     int i, found= -1;
     pthread_mutex_lock(&participantsMutex);
+    sem_wait(&ReadersAreInRoom);//wait until all readers leave
     fprintf(participant_logfile,"finding participant\n");
     fflush(participant_logfile);
     for(i=0;i<LIST_SIZE;i++)
@@ -345,6 +376,7 @@ Operation_result updateParticipant(Participant *participant)
         res.id=List.list[i].id;
     }
     pthread_mutex_unlock(&participantsMutex);
+    sem_post(&ReadersAreInRoom);//room is empty
     display();
     return res;
 
@@ -366,6 +398,7 @@ Operation_result removeParticipantFromTable(Participant *participant)
     int i, found =-1;
     res.id=participant->id;
     pthread_mutex_lock(&participantsMutex);
+    sem_wait(&ReadersAreInRoom);//room is empty
         for(i=0;i<LIST_SIZE;i++)
         {
             if(List.list[i].id==participant->id)
@@ -380,6 +413,7 @@ Operation_result removeParticipantFromTable(Participant *participant)
             }
         }
     pthread_mutex_unlock(&participantsMutex);
+    sem_post(&ReadersAreInRoom);//room is empty
     if(found==-1)
         res.result=-1;
     display();
@@ -512,7 +546,13 @@ struct sockaddr_in *getParticipantAddress(Participant *participant,int port)
 
 void createMonitoringInfo(Participant *participant)
 {
-    fprintf(participant_logfile,"creating MonitoringInfo for participant id: %d",participant->id);
+    fprintf(participant_logfile,"creating MonitoringInfo for participant id: %d\n",participant->id);
+    if(participant->is_manager==1)
+    {
+        fprintf(participant_logfile,"Can not create monitoringInfo for the manager\n");
+        fflush(participant_logfile);
+        return;
+    }
     MonitoringInfo *moni =(MonitoringInfo *) malloc(sizeof(MonitoringInfo));
     participant->monitoration= moni;
     moni->participant=CreateCopyParticipant(participant); //this is just so wrong
@@ -525,11 +565,33 @@ void destroyMonitoringInfo(Participant *participant)
     fprintf(participant_logfile,"Destroying Monitoring info Participant id: %d\n",participant->id);
     if(participant->monitoration == NULL)
     {
-        fprintf("Participant monitoration is NULL, can not destroy\n");
+        fprintf(participant_logfile,"Participant monitoration is NULL, can not destroy\n");
         return;
     }
+    
     pthread_cancel(participant->monitoration->monitoringThread);
     free(participant->monitoration);
 }
+
+void clearMonitoringInfo()
+{//should only be used in getting newest list from manager, never inside manager. If necessary apply concurrent protection
+    int i;
+    for(i=0;i<LIST_SIZE;i++)
+    {
+        List.list[i].monitoration=NULL;
+    }
+}
+
+void createAllMonitoringInfo()
+{
+    int i;
+    for(i=0;i<LIST_SIZE;i++)
+    {
+        if(List.list[i].id !=-1){
+            createMonitoringInfo(&List.list[i]);
+        }
+    }
+}
+
 
 #endif

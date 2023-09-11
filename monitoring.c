@@ -10,8 +10,16 @@
 
 
 int manager_socket =-1;
+pthread_mutex_t max_portMutex;
 int max_port=4026;
 FILE *monitoring_logfile ;
+
+struct struct_Monitoring_response
+{
+    int confirmed;
+    int version;
+} typedef MonitorResponse;
+
 void setMonitoringLogFile(FILE *file)
 {
     if(file != NULL)
@@ -87,27 +95,47 @@ void *ParticipantMonitoringThread(void *arg) {
     struct sockaddr_in *clientAddr = (struct sockaddr_in *) arg;
     int sockfd = createSocketMon(PORT_CLIENT_MON,clientAddr);
     fprintf(monitoring_logfile,"Port Created\n");
-    
+    MonitorResponse response;
     List_Participant *request=getParticipant_list();
     int version_now=request->list_version;
     socklen_t len = sizeof(struct sockaddr_in);
     int send_ret,n;
-    
+    struct timeval tv;
+    tv.tv_sec = 2;
+    tv.tv_usec = 0;
+    int time_left=3;    
+    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     while (1) {
         n = recvfrom(sockfd, request,  sizeof(List_Participant), 0, (struct sockaddr*)clientAddr, &len);
-        if(request->list_version>version_now)
+        fprintf(monitoring_logfile," n= %d\n",n);
+        if (n > 0) {
+            fprintf(monitoring_logfile,"received packaged \n");
+            fprintf(monitoring_logfile,"versao agora =%d, versao recebida: %d",version_now,request->list_version);
+            fflush(monitoring_logfile);    
+            if(request->list_version>version_now)
             {
                 version_now=request->list_version;
                 display();
             }
             
-        fprintf(monitoring_logfile,"versao agora =%d, versao recebida: %d",version_now,request->list_version);
-        fflush(monitoring_logfile);
-        fprintf(monitoring_logfile," n= %d\n",n);
-        if (n > 0) {
-            fprintf(monitoring_logfile,"received packaged \n");            
-            send_ret =sendto(sockfd, request, sizeof(List_Participant), 0,(struct sockaddr *) clientAddr, sizeof(struct sockaddr));
+            response.confirmed=1;
+            response.version=version_now;        
+            send_ret =sendto(sockfd, &response, sizeof(MonitorResponse), 0,(struct sockaddr *) clientAddr, sizeof(struct sockaddr));
+            clearMonitoringInfo();
             fprintf(monitoring_logfile,"send_ret = %d\n",send_ret);
+        }
+        else
+        {
+            tv.tv_usec = 0;
+            time_left--;
+            fprintf(monitoring_logfile,"TIMEOUT to Manager time left = %d\n",time_left);
+            
+            
+            if(time_left<=0)
+            {
+                fprintf(monitoring_logfile,"LOST MANAGER, begin election!\n");
+            }
+            fflush(monitoring_logfile);
         }
         fflush(monitoring_logfile);
     }
@@ -115,96 +143,20 @@ void *ParticipantMonitoringThread(void *arg) {
 }
 
 
-
-
-
-int sendRequest(char* request,Participant *participant)
-{
-    fprintf(monitoring_logfile,"in SendRequest\n");
-    int send_ret,receive_ret, request_result;
-    char buffer[BUFFER_SIZE_MON];
-    
-    int tries =0;
-    struct sockaddr_in *participantAddress = getParticipantAddress(participant,PORT_CLIENT_MON);
-    struct sockaddr_in Manageraddress;
-    
-    if(participantAddress == NULL)
-    {
-        fprintf(monitoring_logfile,"Failed to send request: participantAddress is NULL\n");
-        return -1;
-    }
-    socklen_t len = sizeof(Manageraddress);
-    if(request == NULL)
-    {
-        fprintf(monitoring_logfile,"Failed to send request: request is NULL\n");
-        return -1;
-    }
-    if( manager_socket == -1)
-        manager_socket = createSocketMon(PORT_MANAGER_MON,participantAddress);
-    struct timeval tv;
-    tv.tv_sec = 3;
-    tv.tv_usec = 0;    
-    setsockopt(manager_socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);    
-    do
-    {
-        fprintf(monitoring_logfile,"Sending Request try(%d): %s\n",tries,request);
-        send_ret =sendto(manager_socket, request, strlen(request), 0,(struct sockaddr *) participantAddress, sizeof(struct sockaddr));
-        if (send_ret < 0) 
-            fprintf(monitoring_logfile,"ERROR sendto: %d \n",send_ret);
-        else
-        {
-            receive_ret = recvfrom(manager_socket, buffer, BUFFER_SIZE_MON, 0, (struct sockaddr *) &Manageraddress, &len);
-        }
-        
-        tv.tv_usec = 0;
-        tries++;
-    } while((send_ret <0 || receive_ret <0) && tries <CONFIRMATION_TRIES);
-    if(tries >=CONFIRMATION_TRIES)
-        request_result = -1;
-    else
-        request_result =1;
-    
-    free(participantAddress);
-    return request_result;
-}
-
-
-// int sleepOrWakupParticipant(Participant *participant, int new_status)
-// {
-//     int update_result;
-//     int request_result;
-//     if(new_status ==1)
-//         request_result = sendRequest("sleep",participant);
-//     if(new_status == 0)
-//         request_result =  sendRequest("wakeup",participant);
-//     if(request_result == -1)
-//         return -1;
-//     else
-//     {
-//         if(request_result == 1)
-//         {
-//             participant->is_awaken=new_status;
-//             update_result = updateParticipant(participant);
-//         }
-//     }
-//     fflush(monitoring_logfile);
-//     if(update_result =1 && request_result ==1)
-//         return 1;
-//     else
-//         return -1;
-// }
-
 void *monitorParticipant(void *arg)
 {
     MonitoringInfo *monoration = (MonitoringInfo *) arg;
     List_Participant *request=getParticipant_list();
+    MonitorResponse response;
     int send_ret,receive_ret;
     fprintf(monitoring_logfile,"created monitorParticipant\n");
     struct sockaddr_in *participantAddress = getParticipantAddress(monoration->participant,PORT_CLIENT_MON); //this will read only, so no risk
     struct sockaddr_in responseAddress;
     socklen_t len = sizeof(responseAddress);
     int threadPort = createSocketMon(max_port,participantAddress);
-    max_port++; // maybe this should be safed with a mutex
+    pthread_mutex_lock(&max_portMutex);    
+    max_port++;
+    pthread_mutex_unlock(&max_portMutex);
     struct timeval tv;
     tv.tv_sec = 1;
     tv.tv_usec = 0;    
@@ -220,7 +172,7 @@ void *monitorParticipant(void *arg)
             
         else
         {
-            receive_ret = recvfrom(threadPort, request, sizeof(List_Participant), 0, (struct sockaddr *) &responseAddress, &len);
+            receive_ret = recvfrom(threadPort, &response, sizeof(MonitorResponse), 0, (struct sockaddr *) &responseAddress, &len);
             if (receive_ret < 0)
             {
                 monoration->time_to_sleep--;

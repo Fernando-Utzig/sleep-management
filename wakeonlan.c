@@ -52,6 +52,22 @@ FILE *openLogFile(char *name)
 
 }
 
+void runAsManager(pthread_t *discoveryThreadId,pthread_t *interfaceThreadId,pthread_t *displayThreadId)
+{
+    isManager = 1;
+    printf("Estação iniciada como Manager\n");
+    setMyselfAsManager();
+    Operation_result op = AddParticipantToTable(getMyselfCopy());//including manager into the list
+    setMySelfId(op.id);
+    pthread_create(discoveryThreadId, NULL, discoveryThread, NULL);
+    pthread_create(interfaceThreadId, NULL, interfaceThreadManager, NULL);
+    pthread_create(displayThreadId, NULL, displayParticipantsTable, NULL);
+    createAllMonitoringInfo();
+    while(keepRunning)
+    {
+        //what we could use this for?
+    }
+}
 void ReceiveInterruption(int signalvalue)
 {
     printf("Closing Program\n");
@@ -67,37 +83,24 @@ int main(int argc, char *argv[]){
     printf("Starting ... \n");
     fflush(stdout);
     if (argc > 1 && strcmp(argv[1], "manager") == 0) {
-        setDiscoveryLogFile(openLogFile("discoveryLog_manager.txt"));
-        setInterfaceLogFile(openLogFile("interfaceLog_manager.txt"));
-        setMonitoringLogFile(openLogFile("monitoringLog_manager.txt"));
-        setParticipantsLogFile(openLogFile("participantLog_manager.txt"));
+        setDiscoveryLogFile(openLogFile("Logs/discoveryLog_manager.txt"));
+        setInterfaceLogFile(openLogFile("Logs/interfaceLog_manager.txt"));
+        setMonitoringLogFile(openLogFile("Logs/monitoringLog_manager.txt"));
+        setParticipantsLogFile(openLogFile("Logs/participantLog_manager.txt"));
     }
     else
     {
-        setDiscoveryLogFile(openLogFile("discoveryLog_1.txt"));
-        setInterfaceLogFile(openLogFile("interfaceLog_1.txt"));
-        setMonitoringLogFile(openLogFile("monitoringLog_1.txt"));
-        setParticipantsLogFile(openLogFile("participantLog_1.txt"));
+        setDiscoveryLogFile(openLogFile("Logs/discoveryLog_1.txt"));
+        setInterfaceLogFile(openLogFile("Logs/interfaceLog_1.txt"));
+        setMonitoringLogFile(openLogFile("Logs/monitoringLog_1.txt"));
+        setParticipantsLogFile(openLogFile("Logs/participantLog_1.txt"));
     }
     
     init_participantList();
     setMySelf();
     signal(SIGINT,ReceiveInterruption);
     if (argc > 1 && strcmp(argv[1], "manager") == 0) {
-        isManager = 1;
-        printf("Estação iniciada como Manager\n");
-        setMyselfAsManager();
-        Operation_result op = AddParticipantToTable(getMyselfCopy());//including manager into the list
-        printf("isso aqui\n");
-        fflush(stdout);
-        setMySelfId(op.id);
-        pthread_create(&discoveryThreadId, NULL, discoveryThread, NULL);
-        pthread_create(&interfaceThreadId, NULL, interfaceThreadManager, NULL);
-        pthread_create(&displayThreadId, NULL, displayParticipantsTable, NULL);
-        while(keepRunning)
-        {
-            //what we could use this for?
-        }
+        runAsManager(&discoveryThreadId,&interfaceThreadId,&displayThreadId);
     } else {
         int is_awaken = 1;
         if(sendDiscoverypackaged(&ManagerSock) == -1)
