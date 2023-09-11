@@ -16,16 +16,19 @@
 
 #define Participant_Name_size 64
 #define TABLE_SIZE 997
+#define LIST_SIZE 64
+
+
 
 
 struct monitoringInformation typedef MonitoringInfo;
-
 struct ParticipantData {
+    int id;
     char Hostname[Participant_Name_size];
     char MAC[Participant_Name_size];
     char ip_address[Participant_Name_size];
     int is_awaken;
-    struct ParticipantData *next;
+    int is_manager;
     MonitoringInfo *monitoration;
 }typedef Participant;
 
@@ -37,22 +40,38 @@ struct monitoringInformation
     pthread_t monitoringThread;    
 } typedef MonitoringInfo;
 
+struct Participant_List_Metadata {
+    Participant list[LIST_SIZE];
+    int list_size;
+    int list_version;
+    int maxId;
+} typedef List_Participant;
+
+struct Operation_result_S
+{
+    int result;
+    int id;
+} typedef Operation_result;
+
+
 void setParticipantsLogFile(FILE *file);
-int AddParticipantToTable(Participant *participant);
-int removeParticipantFromTable(Participant *participant);
+Operation_result AddParticipantToTable(Participant *participant);
+Operation_result removeParticipantFromTable(Participant *participant);
 unsigned long hash(char *mac);
-void init_participantTable(void);
+void init_participantList(void);
 void printParticipant(Participant *participant);
 void printAllParticipants();
 Participant *getParticipant(char *Mac);
-int updateParticipant(Participant *participant);
+Operation_result updateParticipant(Participant *participant);
 Participant *Create_Participant(char* Message,int message_lenght);
 void printManager();
 void setMySelf();
 void setMySelfIpOnLan(char *ip);
+void setMySelfId(int id);
 void setManager(Participant *received);
 void setMyselfActive();
 void setMyselfSleep();
+void setMyselfAsManager();
 Participant *getMyselfCopy();
 Participant *getManagerCopy();
 void copyParticipant();

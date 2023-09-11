@@ -5,6 +5,7 @@
 #include "participants.h"
 
 Participant* ParticipantsTable[TABLE_SIZE];
+List_Participant List;
 pthread_mutex_t participantsMutex;
 Participant myself;
 Participant *Manager;
@@ -36,9 +37,10 @@ void printAllParticipants()
     printf("-------------------------\n");
     printf("      Participants       \n");
     printf("-------------------------\n");
-    printf("Hostname  |  IP  |  MAC  |  Status\n");
-    for (int i=0; i<TABLE_SIZE; i++) {
-        printParticipant(ParticipantsTable[i]);
+    printf("Hostname| ID |  IP  |  MAC  |  Status\n");
+    for (int i=0; i<LIST_SIZE; i++) {
+        if(List.list[i].id>0)
+            printParticipant(&List.list[i]);
     }
     pthread_mutex_unlock(&participantsMutex);
 }
@@ -46,7 +48,6 @@ void printAllParticipants()
 void setManager(Participant *received)
 {
     Manager = CreateCopyParticipant(received);
-    Manager->next=NULL;
 }
 
 
@@ -103,10 +104,23 @@ void getMyMac(char *myMac)
 
 void setMySelfIpOnLan(char *ip)
 {
-    if(ip !=NULL)
+    if( ip == NULL)
     {
-        strcpy(myself.ip_address,ip);
+        fprintf(participant_logfile,"Tried to set NULL IP\n");
+        return;
     }
+    fprintf(participant_logfile,"my now ip is %s\n",ip);
+    strcpy(myself.ip_address,ip);
+    updateParticipant(&myself);
+    return;
+}
+
+void setMySelfId(int id)
+{
+    pthread_mutex_lock(&myselfMutex);
+    myself.id=id;
+    pthread_mutex_unlock(&myselfMutex);
+    updateParticipant(&myself);
 }
 
 void setMySelf()
@@ -127,15 +141,14 @@ void setMySelf()
         myip = inet_ntoa(*((struct in_addr*)
                         myhost->h_addr_list[0]));
         strcpy(myself.ip_address,myip);
-        myself.is_awaken = 1;
+        
 
     }
-	
-    
+    myself.is_awaken = 1;
+    myself.is_manager = 0;
     fprintf(participant_logfile,"MyMac is =%s\n",myself.MAC);
     fprintf(participant_logfile,"hostname is = %s\n",myself.Hostname);
     fprintf(participant_logfile,"myip is = %s\n",myself.ip_address);
-    myself.next = NULL;
 }
 void printManager()
 {
@@ -144,7 +157,7 @@ void printManager()
     printf("-------------------------\n");
     printf("        Manager          \n");
     printf("-------------------------\n");
-    printf("Hostname  |  IP  |  MAC  |  Status\n");
+    printf("Hostname | ID |  IP  |  MAC  |  Status\n");
     printParticipant(Manager);
 }
 
@@ -157,14 +170,19 @@ unsigned long hash(char *hostname){
     return sum % TABLE_SIZE;
 }
 
-void init_participantTable(void)
+void init_participantList(void)
 {
     int i;
-    for(i=0;i<TABLE_SIZE;i++)
+    fprintf(participant_logfile,"Inicianting Participant List\n");
+    fflush(participant_logfile);
+    for(i=0;i<LIST_SIZE;i++)
     {
-        ParticipantsTable[i]=NULL;
+        List.list[i].id=-1;
     }
-    fprintf(participant_logfile,"participants table iniciated\n");
+    List.list_version=0;
+    List.list_size=0;
+    List.maxId=1;
+    fprintf(participant_logfile,"participants List iniciated\n");
 } 
 
 int get_index(char* Message,int message_lenght)
@@ -193,6 +211,8 @@ Participant *Create_Participant(char* Message,int message_lenght)
     int mac_index;
     int ip_index;
     int hostname_index;
+    new_participant->id=List.maxId;
+    List.maxId++;
     mac_index = get_index(Message,message_lenght);
     fprintf(participant_logfile,"i eh = %d a mensagem é = %s\n", mac_index,Message);
     fprintf(participant_logfile,"mac_index=%d bate em %c\n",mac_index,Message[mac_index]);
@@ -203,206 +223,155 @@ Participant *Create_Participant(char* Message,int message_lenght)
     ip_index = get_index(&Message[hostname_index+1],message_lenght-hostname_index);
     copystring(new_participant->ip_address,&Message[hostname_index+1],ip_index);
     new_participant->is_awaken=1;
-    new_participant->next=NULL;
     printParticipant(new_participant);
     return new_participant;
 }
 
-//beware to lock the table before using this
-Participant *find_in_next(Participant *root,char *Mac)
-{
-    if(root == NULL)
-        return NULL;
-    if(strcmp(root->Hostname,Mac))
-    {
-        return root;
-    }
-    else
-        return find_in_next(root->next,Mac);
-}
 
-Participant *find_before_next(Participant *root,char *hostname) // untested
-{
-    if(root == NULL)
-        return NULL;
-    if(root->next == NULL)
-        return NULL;
-    if(strcmp(root->next->Hostname,hostname))
-    {
-        return root;
-    }
-    else
-        return find_in_next(root->next,hostname);
-}
 
-int insert_in_next(Participant *old,Participant *new)
-{
-    if(old == NULL || new == NULL)
-    {
-        fprintf(participant_logfile,"insert_in_next FAILED");
-        return -1;
-    }
-    if(strcmp(old->Hostname,new->Hostname) == 0)
-    {
-        old->is_awaken=1;
-        free(new);
-        fprintf(participant_logfile,"Already known Participant");
-        return 2;
-    }
-    else{
-        if(old->next ==NULL)
-        {
-            old->next = new;
-            createMonitoringInfo(new);
-            return 1;
-        }
-        else
-            return insert_in_next(old->next,new);
-    }
-}
 
-int AddParticipantToTable(Participant *participant)
+
+Operation_result AddParticipantToTable(Participant *participant)
 {
+    Operation_result res;
     fprintf(participant_logfile,"Adding participant\n");
-    int return_value;
     if(participant == NULL)
     {
         fprintf(participant_logfile,"AddParticipantToTable participant is NULL\n");
-        return -1;
+        res.id=-1;
+        res.result=-5;
+        return res;
     }
-    int computed_hash;
-    Participant* new_participant = CreateCopyParticipant(participant);
-    computed_hash=hash(new_participant->Hostname);
-    fprintf(participant_logfile,"computed_hash = %d\n",computed_hash);
-    fflush(participant_logfile);
+    int i;
+    int found=-1;
     pthread_mutex_lock(&participantsMutex);
-    if(ParticipantsTable[computed_hash] != NULL){
-        fprintf(participant_logfile,"Found someone at the table\n");
-        if(strcmp(ParticipantsTable[computed_hash]->Hostname,new_participant->Hostname) == 0)
+    for(i=0;i<LIST_SIZE;i++)
+    {
+        if(0)//List.list[i].id != -1 && strcmp(List.list[i].Hostname,participant->Hostname) == 0)
         {
-            fprintf(participant_logfile,"Already known Participant\n");
-            ParticipantsTable[computed_hash]->is_awaken=1;
-            fprintf(participant_logfile,"seted particitipant as awake\n");
-            fprintf(participant_logfile,"free new_participant\n");
-            return_value=2;
+            found=i;
+            break;
         }
-        else{
-            return_value=insert_in_next(ParticipantsTable[computed_hash],new_participant);
-            
-        }
+    }
+    if(found!=-1)
+    {
+        fprintf(participant_logfile,"achou mesmo hostname\n");
+        fflush(participant_logfile);
+        res.result= 2;
     }
     else
     {
-        fprintf(participant_logfile,"Space is empty!\n");
-        ParticipantsTable[computed_hash] = new_participant;
-        return_value=1;
-        createMonitoringInfo(new_participant);
+        found=-1;
+        for(i=0;i<LIST_SIZE;i++)
+        {
+            if(List.list[i].id == -1)
+            {
+                fprintf(participant_logfile,"Achou espaço! index = %d\n",i);
+                found =i;
+                break;
+            }
+        }
+        if(found!=-1){
+            participant->id=List.maxId;
+            res.id=List.maxId;
+            List.maxId++;
+            copyParticipant(&List.list[i],participant);
+            printf("\n novo id=%d \n",List.list[i].id);
+            res.result=1;
+        }
+        else
+        {
+            res.result=-1;
+        }
+        
     }
+    
     pthread_mutex_unlock(&participantsMutex);
-    fprintf(participant_logfile,"Adding participant return value : %d\n",return_value);
+    fprintf(participant_logfile,"Adding participant result value : %d id; %d\n",res.result,res.id);
+    fflush(participant_logfile);
     display();
-    return return_value;
+    return res;
 }
 
 
 
-int updateParticipant(Participant *participant)
+Operation_result updateParticipant(Participant *participant)
 {
     Participant *tmp;
-    int result;
+    Operation_result res;
+    fprintf(participant_logfile,"Updating participant\n");
+    fflush(participant_logfile);
     if(participant == NULL)
     {
         fprintf(participant_logfile,"Trying to update NULL participant\n");
-        return -1;
+        res.result=5;
+        res.id=-1;
+        return res;
     }
-    int computed_hash = hash(participant->Hostname);
+    int i, found= -1;
     pthread_mutex_lock(&participantsMutex);
-    if(ParticipantsTable[computed_hash]==NULL)
-        result = -1;
+    fprintf(participant_logfile,"finding participant\n");
+    fflush(participant_logfile);
+    for(i=0;i<LIST_SIZE;i++)
+    {
+        if(List.list[i].id==participant->id)
+        {
+            found =i;
+            fprintf(participant_logfile,"Found participant with id=%d index=%d\n",participant->id,i);
+            break;
+        }
+    }
+    if(found == -1)
+    {
+        res.result= -1;
+        res.id=participant->id;;
+        fprintf(participant_logfile,"Did not Found participant with id=%d \n",participant->id);
+    }
     else
     {
-        if(strcmp(ParticipantsTable[computed_hash]->Hostname,participant->Hostname) == 0)
-        {
-            ParticipantsTable[computed_hash]->is_awaken=participant->is_awaken;
-            result =1;
-        }
-            
-        else{
-            tmp = find_in_next(ParticipantsTable[computed_hash]->next,participant->Hostname);
-            if(tmp==NULL)
-                result = -2;
-            else
-            {
-                tmp->is_awaken=participant->is_awaken;
-                result=1;
-            }
-        }    
-    }    
+        copyParticipant(&List.list[i],participant);
+        res.result=1;
+        res.id=List.list[i].id;
+    }
     pthread_mutex_unlock(&participantsMutex);
     display();
-    return result;
+    return res;
 
 }
-int removeParticipantFromTable(Participant *participant)
+Operation_result removeParticipantFromTable(Participant *participant)
 {
     
     Participant *tmp,*tmp2;
-    fprintf(participant_logfile,"Removin Participant\n");
-    int result;
+    Operation_result res;
     if(participant == NULL)
     {
         fprintf(participant_logfile,"Trying to remove NULL participant\n");
-        return -1;
+        fflush(participant_logfile);
+        res.result=-5;
+        res.id=-1;
+        return res;
     }
-    int computed_hash = hash(participant->Hostname);
-    fprintf(participant_logfile,"computed hash = %d\n",computed_hash);
-    fflush(participant_logfile);
+    fprintf(participant_logfile,"Removin Participant with id =%d\n",participant->id);
+    int i, found =-1;
+    res.id=participant->id;
     pthread_mutex_lock(&participantsMutex);
-    if(ParticipantsTable[computed_hash]==NULL)
-        result = -1;
-    else
-    {
-        
-        if(strcmp(ParticipantsTable[computed_hash]->Hostname,participant->Hostname) == 0)
+        for(i=0;i<LIST_SIZE;i++)
+        {
+            if(List.list[i].id==participant->id)
             {
-                result =1;
-                if(ParticipantsTable[computed_hash]->next == NULL)
-                {
-                    fprintf(participant_logfile,"removin found in list, no next\n");
-                    fflush(participant_logfile);
-                    destroyMonitoringInfo(ParticipantsTable[computed_hash]);
-                    free(ParticipantsTable[computed_hash]);
-                    ParticipantsTable[computed_hash]=NULL;
-                }
-                else
-                {
-                    fprintf(participant_logfile,"removin found in list, next now in the list\n");
-                    tmp = ParticipantsTable[computed_hash];
-                    ParticipantsTable[computed_hash] = ParticipantsTable[computed_hash]->next;
-                    destroyMonitoringInfo(ParticipantsTable[computed_hash]);
-                    free(tmp);
-                }
+                List.list[i].id=-1;
+                found=i;
+                res.result=1;
+                break;
             }
-        else{
-            tmp = find_before_next(ParticipantsTable[computed_hash]->next,participant->Hostname);
-            if(tmp==NULL)
-                result = -2;
-            else
-            {//untested
-                result =1;
-                
-                tmp2 = tmp->next;
-                destroyMonitoringInfo(tmp2);
-                tmp->next = tmp2->next;
-                
-                free(tmp2);
-            }
-        }    
-    }
+        }
     pthread_mutex_unlock(&participantsMutex);
+    if(found==-1)
+        res.result=-1;
     display();
-    fprintf(participant_logfile,"removing result: %d\n",result);
-    return result;
+    fprintf(participant_logfile,"removing result: %d index found =%d\n",res.result,found);
+    fflush(participant_logfile);
+    return res;
 }
 
 void printParticipant(Participant *participant)
@@ -412,24 +381,30 @@ void printParticipant(Participant *participant)
 
     if (participant->Hostname != NULL)
         printf("%s | ", participant->Hostname);
+    printf("%d | ", participant->id);
     if (participant->ip_address != NULL)
         printf("%s | ", participant->ip_address);
     if (participant->MAC != NULL)
         printf("%s | ", participant->MAC);
     if (participant->is_awaken == 0)
-        printf("Sleeping\n");
+        printf("Sleeping");
     else
-        printf("Active\n");
+        printf("Active");
+    if (participant->is_manager == 1)
+        printf(" | Manager");
+    printf("\n");
     printf("-------------------------\n");
-    printParticipant(participant->next);
 }
 
 void copyParticipant(Participant *copy,Participant *original)
 {
+    fprintf(participant_logfile,"copying participant\n");
+    copy->id=original->id;
     strcpy(copy->Hostname,original->Hostname);
     strcpy(copy->ip_address,original->ip_address);
     strcpy(copy->MAC,original->MAC);
     copy->is_awaken=original->is_awaken;
+    copy->is_manager=original->is_manager;
 }
 
 Participant * CreateCopyParticipant(Participant *original)
@@ -459,20 +434,22 @@ Participant *getManagerCopy()
 
 Participant *getParticipant(char *hostname)
 {
-    Participant *tmp;
+    Participant *tmp=NULL;
     if(hostname == NULL)
     {
         fprintf(participant_logfile,"ERROR Mac is null ");
         return NULL;
     }
-    int computed_hash=hash(hostname);
+    int i, found= -1;
     pthread_mutex_lock(&participantsMutex);
-    if(ParticipantsTable[computed_hash]==NULL)
-        return NULL;
-    if(strcmp(ParticipantsTable[computed_hash]->Hostname,hostname) == 0)
-        tmp=CreateCopyParticipant(ParticipantsTable[computed_hash]);
-    else
-        tmp= CreateCopyParticipant(find_in_next(ParticipantsTable[computed_hash]->next,hostname));        
+        for(i=0;i<LIST_SIZE;i++)
+        {
+            if(List.list[i].id != -1 && strcmp(List.list[i].Hostname,hostname) == 0)
+            {
+                tmp = CreateCopyParticipant(&List.list[i]);
+                break;
+            }
+        }
     pthread_mutex_unlock(&participantsMutex);
     return tmp;
 }
@@ -481,6 +458,13 @@ void setMyselfSleep()
 {
     pthread_mutex_lock(&myselfMutex);
     myself.is_awaken=0;
+    pthread_mutex_unlock(&myselfMutex);
+}
+
+void setMyselfAsManager()
+{
+    pthread_mutex_lock(&myselfMutex);
+    myself.is_manager=1;
     pthread_mutex_unlock(&myselfMutex);
 }
 

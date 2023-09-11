@@ -14,6 +14,7 @@ typedef struct discovery_package_struct
     int command;
     Participant part;
     int result;
+    int new_id;
     char extra[256];
 } discovery_package;
 
@@ -38,6 +39,12 @@ void setDiscoveryLogFile(FILE *file)
 
 int createSocket(int port, char serverName[]) {
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    struct ifreq ifr;
+    ifr.ifr_addr.sa_family = AF_INET;
+    char array[] = "eth0";
+    strncpy(ifr.ifr_name , array , IFNAMSIZ - 1);
+    ioctl(sockfd, SIOCGIFADDR, &ifr);
+    setMySelfIpOnLan(inet_ntoa(( (struct sockaddr_in *)&ifr.ifr_addr )->sin_addr));
     int yes = 1;
     int ret;
     struct hostent *server;
@@ -114,7 +121,8 @@ void *discoveryThread(void *arg) {
     char *ip_rev;
     createDiscoveryPackage(NEW_ENTRY_COMMAND);
     socklen_t len = sizeof(clientAddr);
-    int send_ret,n,operation_result;
+    int send_ret,n;
+    Operation_result operation_result;
     int teste;
     while (1) {
         n = recvfrom(sockfd, &received_package, sizeof(discovery_package), 0, (struct sockaddr*)&clientAddr, &len);        
@@ -131,9 +139,10 @@ void *discoveryThread(void *arg) {
             if(received_package.command == EXIT_PARTICIPANT_COMMAND)
                 operation_result=removeParticipantFromTable(&received_package.part);
             send_package = createDiscoveryPackage(received_package.command);
-            send_package->result = operation_result;
+            send_package->result = operation_result.result;
+            send_package->new_id=operation_result.id;
             strcpy(send_package->extra,ip_rev);
-            fprintf(discovery_logfile,"operation_result = %d\n",operation_result);
+            fprintf(discovery_logfile,"operation_result result: %d id:%d\n",operation_result.result,operation_result.id);
             send_ret = sendto(sockfd, send_package, sizeof(discovery_package), 0,(struct sockaddr *) &clientAddr, sizeof(struct sockaddr));
             free(send_package);
             fprintf(discovery_logfile,"send_ret = %d\n",send_ret);
@@ -196,6 +205,7 @@ int sendDiscoverypackaged(struct sockaddr_in *Manageraddress)
             fprintf(discovery_logfile," Manager ip(in string)= %s\n",some_addr);
             strcpy(received_packaged.part.ip_address,some_addr);
             setMySelfIpOnLan(received_packaged.extra);
+            setMySelfId(received_packaged.new_id);
             setManager(&received_packaged.part);
             fflush(discovery_logfile);
         }
