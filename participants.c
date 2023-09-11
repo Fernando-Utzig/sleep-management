@@ -593,5 +593,16 @@ void createAllMonitoringInfo()
     }
 }
 
+void destroyAllMonitoringInfo()
+{
+    int i;
+    for(i=0;i<LIST_SIZE;i++)
+    {
+        if(List.list[i].id !=-1){
+            destroyMonitoringInfo(&List.list[i]);
+        }
+    }
+}
+
 
 #endif

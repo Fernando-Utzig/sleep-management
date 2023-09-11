@@ -52,9 +52,39 @@ FILE *openLogFile(char *name)
 
 }
 
+void destroyManagerAssets(pthread_t *discoveryThreadId,pthread_t *interfaceThreadId,pthread_t *displayThreadId)
+{
+    fprintf(stderr,"Closing Thread discoveryThreadId %ld\n",*discoveryThreadId);
+    if(discoveryThreadId != 0)
+    {
+        pthread_cancel(*discoveryThreadId);
+        discoveryThreadId=0;
+    }
+        
+    fprintf(stderr,"Closing Thread interfaceThreadId %ld\n",*interfaceThreadId);
+    if(interfaceThreadId != 0)
+    {
+        pthread_cancel(*interfaceThreadId);
+        interfaceThreadId=0;
+    }
+    fflush(stderr);
+    fprintf(stderr,"Closing Thread displayThreadId %ld\n",*displayThreadId);
+    if(displayThreadId != 0)
+    {
+        pthread_cancel(*displayThreadId);
+        displayThreadId=0;
+    }
+    fprintf(stderr,"Closing Thread monitoring threads \n");
+    fflush(stderr);
+    destroyAllMonitoringInfo();
+}
+
+
+
+
 void runAsManager(pthread_t *discoveryThreadId,pthread_t *interfaceThreadId,pthread_t *displayThreadId)
 {
-    isManager = 1;
+    
     printf("Estação iniciada como Manager\n");
     setMyselfAsManager();
     Operation_result op = AddParticipantToTable(getMyselfCopy());//including manager into the list
@@ -63,11 +93,47 @@ void runAsManager(pthread_t *discoveryThreadId,pthread_t *interfaceThreadId,pthr
     pthread_create(interfaceThreadId, NULL, interfaceThreadManager, NULL);
     pthread_create(displayThreadId, NULL, displayParticipantsTable, NULL);
     createAllMonitoringInfo();
-    while(keepRunning)
+    while(keepRunning==1 && isManager==1)
     {
         //what we could use this for?
     }
+    destroyManagerAssets(discoveryThreadId,interfaceThreadId,displayThreadId);
 }
+
+void destroyParticipantAssets(pthread_t *monitoringThreadId,pthread_t *interfaceParticipantThreadId,pthread_t *interfaceThreadId)
+{
+    fprintf(stderr,"Closing Thread monitoringThreadId %ld\n",*monitoringThreadId);
+    if(monitoringThreadId != 0)
+    {
+        pthread_cancel(*monitoringThreadId);
+        monitoringThreadId=0;
+    }
+        
+    fprintf(stderr,"Closing Thread interfaceParticipantThreadId %ld\n",*interfaceParticipantThreadId);
+    if(interfaceParticipantThreadId != 0)
+    {
+        pthread_cancel(*interfaceParticipantThreadId);
+        interfaceParticipantThreadId=0;
+    }
+        
+    fprintf(stderr,"Closing Thread interfaceThreadId %ld\n",*interfaceThreadId);
+    if(interfaceThreadId != 0)
+    {
+        pthread_cancel(*interfaceThreadId);
+        interfaceThreadId=0;
+    }
+}
+
+void runAsParticipant(pthread_t *monitoringThreadId,pthread_t *interfaceParticipantThreadId,pthread_t *interfaceThreadId)
+{
+    pthread_create(monitoringThreadId, NULL, ParticipantMonitoringThread, &ManagerSock);
+    pthread_create(interfaceParticipantThreadId, NULL, interfaceThreadParticipant, NULL);
+    pthread_create(interfaceThreadId, NULL, displayParticipantsTable, NULL);
+    while(keepRunning==1 && isManager==0)
+    {
+    }
+}
+
 void ReceiveInterruption(int signalvalue)
 {
     printf("Closing Program\n");
@@ -75,7 +141,7 @@ void ReceiveInterruption(int signalvalue)
     keepRunning =0;
 }
 int main(int argc, char *argv[]){
-    pthread_t discoveryThreadId =0, interfaceParticipantThreadId=0, interfaceThreadId=0, monitoringThreadId=0, managementThreadId =0,displayThreadId=0;
+    pthread_t discoveryThreadId =0, interfaceThreadId=0, interfaceParticipantThreadId=0, monitoringThreadId=0, managementThreadId =0,displayThreadId=0;
     
     
     Participant *tmp;
@@ -100,20 +166,26 @@ int main(int argc, char *argv[]){
     setMySelf();
     signal(SIGINT,ReceiveInterruption);
     if (argc > 1 && strcmp(argv[1], "manager") == 0) {
-        runAsManager(&discoveryThreadId,&interfaceThreadId,&displayThreadId);
+        isManager = 1;
     } else {
         int is_awaken = 1;
         if(sendDiscoverypackaged(&ManagerSock) == -1)
         {
-            printf("\nFailed to discover Manager, Closing");
-            exit(1);
+            printf("\nFailed to discover Manager, running as Manager");
+            isManager = 1;
         }        
-        pthread_create(&monitoringThreadId, NULL, ParticipantMonitoringThread, &ManagerSock);
-        pthread_create(&interfaceParticipantThreadId, NULL, interfaceThreadParticipant, NULL);
-        pthread_create(&interfaceThreadId, NULL, displayParticipantsTable, NULL);
-        while(keepRunning)
-        {
-        }
+        else
+            isManager = 0;
+    }
+    while(keepRunning)
+    {
+        if(isManager==1 && keepRunning==1)
+            runAsManager(&discoveryThreadId,&interfaceThreadId,&displayThreadId);
+        else if(isManager==0 && keepRunning==1)
+            runAsParticipant(&monitoringThreadId,&interfaceParticipantThreadId,&interfaceThreadId);
+    }
+    if(isManager==0)
+    {
         printf("Sending Exit request\n");
         fflush(stdout);
         tmp = getManagerCopy();
@@ -123,20 +195,6 @@ int main(int argc, char *argv[]){
             else
                 printf("Exit failed\n");
     }
-    fprintf(stderr,"Closing Threads\n");
-    fprintf(stderr,"Closing Thread discoveryThreadId %ld\n",discoveryThreadId);
-    if(discoveryThreadId != 0)
-        pthread_cancel(discoveryThreadId);
-    fprintf(stderr,"Closing Thread monitoringThreadId %ld\n",monitoringThreadId);
-    if(monitoringThreadId != 0)
-        pthread_cancel(monitoringThreadId);
-    fprintf(stderr,"Closing Thread interfaceThreadId %ld\n",interfaceThreadId);
-    if(interfaceThreadId != 0)
-        pthread_cancel(interfaceThreadId);
-    fprintf(stderr,"Closing Thread displayThreadId %ld\n",interfaceThreadId);
-    if(displayThreadId != 0)
-        pthread_cancel(displayThreadId);
-    fprintf(stderr,"Threads Closed!\n");
     closeDiscoverySocket();
     closeMonitoringSocket();
     fprintf(stderr,"Sockets Closed!\n");

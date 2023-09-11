@@ -82,4 +82,5 @@ void copyParticipant();
 struct sockaddr_in *getParticipantAddress(Participant *participant,int port);
 void clearMonitoringInfo();
 void createAllMonitoringInfo();
+void destroyAllMonitoringInfo();
 #endif
