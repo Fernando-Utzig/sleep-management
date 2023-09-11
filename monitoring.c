@@ -109,8 +109,9 @@ void *ParticipantMonitoringThread(void *arg) {
         n = recvfrom(sockfd, request,  sizeof(List_Participant), 0, (struct sockaddr*)clientAddr, &len);
         fprintf(monitoring_logfile," n= %d\n",n);
         if (n > 0) {
+            time_left=3;
             fprintf(monitoring_logfile,"received packaged \n");
-            fprintf(monitoring_logfile,"versao agora =%d, versao recebida: %d",version_now,request->list_version);
+            fprintf(monitoring_logfile,"versao agora =%d, versao recebida: %d\n",version_now,request->list_version);
             fflush(monitoring_logfile);    
             if(request->list_version>version_now)
             {
@@ -134,6 +135,7 @@ void *ParticipantMonitoringThread(void *arg) {
             if(time_left<=0)
             {
                 fprintf(monitoring_logfile,"LOST MANAGER, begin election!\n");
+                CallElection();
             }
             fflush(monitoring_logfile);
         }

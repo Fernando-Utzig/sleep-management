@@ -489,7 +489,7 @@ Participant *getParticipant(char *hostname)
         return NULL;
     }
     int i, found= -1;
-    pthread_mutex_lock(&participantsMutex);
+    ListReaderEnterRoom();
         for(i=0;i<LIST_SIZE;i++)
         {
             if(List.list[i].id != -1 && strcmp(List.list[i].Hostname,hostname) == 0)
@@ -498,7 +498,7 @@ Participant *getParticipant(char *hostname)
                 break;
             }
         }
-    pthread_mutex_unlock(&participantsMutex);
+    ListReaderLeaveRoom();
     return tmp;
 }
 
@@ -511,9 +511,23 @@ void setMyselfSleep()
 
 void setMyselfAsManager()
 {
+    
     pthread_mutex_lock(&myselfMutex);
     myself.is_manager=1;
     pthread_mutex_unlock(&myselfMutex);
+    int i;
+    pthread_mutex_lock(&participantsMutex);
+    sem_wait(&ReadersAreInRoom);//room is empty
+    for(i=0;i<LIST_SIZE;i++)
+    {
+        if(List.list[i].is_manager==1 && List.list[i].id!=myself.id)
+            List.list[i].is_manager=0;
+        if(List.list[i].id==myself.id)
+            List.list[i].is_manager=1;
+    }
+    List.list_version++;
+    sem_post(&ReadersAreInRoom);//room is empty
+    pthread_mutex_unlock(&participantsMutex);
 }
 
 void setMyselfActive()

@@ -132,6 +132,19 @@ void runAsParticipant(pthread_t *monitoringThreadId,pthread_t *interfaceParticip
     while(keepRunning==1 && isManager==0)
     {
     }
+    destroyParticipantAssets(monitoringThreadId,interfaceParticipantThreadId,interfaceThreadId);
+}
+
+void changeToManager(int signalvalue)
+{
+    printf("Changin to manager\n");
+    isManager=1;
+}
+
+void changeToParticipant(int signalvalue)
+{
+    printf("Changin to Participant\n");
+    isManager=0;
 }
 
 void ReceiveInterruption(int signalvalue)
@@ -165,13 +178,16 @@ int main(int argc, char *argv[]){
     init_participantList();
     setMySelf();
     signal(SIGINT,ReceiveInterruption);
+    signal(SIGUSR2,changeToParticipant);
+    signal(SIGUSR1,changeToManager);
+    
     if (argc > 1 && strcmp(argv[1], "manager") == 0) {
         isManager = 1;
     } else {
         int is_awaken = 1;
         if(sendDiscoverypackaged(&ManagerSock) == -1)
         {
-            printf("\nFailed to discover Manager, running as Manager");
+            printf("Failed to discover Manager, running as Manager\n");
             isManager = 1;
         }        
         else
