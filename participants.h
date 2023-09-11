@@ -74,6 +74,7 @@ void setMyselfSleep();
 void setMyselfAsManager();
 Participant *getMyselfCopy();
 Participant *getManagerCopy();
+List_Participant* getParticipant_list();
 void copyParticipant();
 struct sockaddr_in *getParticipantAddress(Participant *participant,int port);
 

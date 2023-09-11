@@ -35,8 +35,11 @@ void printAllParticipants()
     pthread_mutex_lock(&participantsMutex);
     printf("\n");
     printf("-------------------------\n");
-    printf("      Participants       \n");
-    printf("-------------------------\n");
+    if(myself.is_manager)
+        printf("         Manager        \n");
+    else
+        printf("        Participant        \n");
+    printf("----------List-Version:%d---------\n",List.list_version);
     printf("Hostname| ID |  IP  |  MAC  |  Status\n");
     for (int i=0; i<LIST_SIZE; i++) {
         if(List.list[i].id>0)
@@ -50,6 +53,10 @@ void setManager(Participant *received)
     Manager = CreateCopyParticipant(received);
 }
 
+List_Participant* getParticipant_list()
+{
+    return &List;
+}
 
 
 void getMyMac(char *myMac)
@@ -275,7 +282,10 @@ Operation_result AddParticipantToTable(Participant *participant)
             participant->id=List.maxId;
             res.id=List.maxId;
             List.maxId++;
+            List.list_version++;
             copyParticipant(&List.list[i],participant);
+            if(List.list[i].is_manager==0)
+                createMonitoringInfo(&List.list[i]);
             printf("\n novo id=%d \n",List.list[i].id);
             res.result=1;
         }
@@ -329,6 +339,7 @@ Operation_result updateParticipant(Participant *participant)
     }
     else
     {
+        List.list_version++;
         copyParticipant(&List.list[i],participant);
         res.result=1;
         res.id=List.list[i].id;
@@ -360,8 +371,11 @@ Operation_result removeParticipantFromTable(Participant *participant)
             if(List.list[i].id==participant->id)
             {
                 List.list[i].id=-1;
+                if(List.list[i].is_manager==0)
+                    destroyMonitoringInfo(&List.list[i]);
                 found=i;
                 res.result=1;
+                List.list_version++;
                 break;
             }
         }
@@ -498,6 +512,7 @@ struct sockaddr_in *getParticipantAddress(Participant *participant,int port)
 
 void createMonitoringInfo(Participant *participant)
 {
+    fprintf(participant_logfile,"creating MOnitoringInfo for participant id: %d",participant->id);
     MonitoringInfo *moni =(MonitoringInfo *) malloc(sizeof(MonitoringInfo));
     participant->monitoration= moni;
     moni->participant=CreateCopyParticipant(participant); //this is just so wrong
