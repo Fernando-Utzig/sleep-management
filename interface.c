@@ -160,7 +160,6 @@ void *interfaceThreadManager(void *arg) {
             }
             else
             {
-                //request_result = sleepOrWakupParticipant(participant,1);
                 // Comando para enviar o pacote Wake-on-LAN
                 char command[128];
                 char prefix[] = "wakeonlan ";

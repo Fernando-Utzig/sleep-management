@@ -66,16 +66,31 @@ int main(int argc, char *argv[]){
     char read[64];
     printf("Starting ... \n");
     fflush(stdout);
-    setDiscoveryLogFile(openLogFile("discoveryLog_2.txt"));
-    setInterfaceLogFile(openLogFile("interfaceLog_2.txt"));
-    setMonitoringLogFile(openLogFile("monitoringLog_2.txt"));
-    setParticipantsLogFile(openLogFile("participantLog_2.txt"));
-    init_participantTable();
+    if (argc > 1 && strcmp(argv[1], "manager") == 0) {
+        setDiscoveryLogFile(openLogFile("discoveryLog_manager.txt"));
+        setInterfaceLogFile(openLogFile("interfaceLog_manager.txt"));
+        setMonitoringLogFile(openLogFile("monitoringLog_manager.txt"));
+        setParticipantsLogFile(openLogFile("participantLog_manager.txt"));
+    }
+    else
+    {
+        setDiscoveryLogFile(openLogFile("discoveryLog_1.txt"));
+        setInterfaceLogFile(openLogFile("interfaceLog_1.txt"));
+        setMonitoringLogFile(openLogFile("monitoringLog_1.txt"));
+        setParticipantsLogFile(openLogFile("participantLog_1.txt"));
+    }
+    
+    init_participantList();
     setMySelf();
     signal(SIGINT,ReceiveInterruption);
     if (argc > 1 && strcmp(argv[1], "manager") == 0) {
         isManager = 1;
         printf("Estação iniciada como Manager\n");
+        setMyselfAsManager();
+        Operation_result op = AddParticipantToTable(getMyselfCopy());//including manager into the list
+        printf("isso aqui\n");
+        fflush(stdout);
+        setMySelfId(op.id);
         pthread_create(&discoveryThreadId, NULL, discoveryThread, NULL);
         pthread_create(&interfaceThreadId, NULL, interfaceThreadManager, NULL);
         pthread_create(&displayThreadId, NULL, displayParticipantsTable, NULL);
@@ -89,7 +104,7 @@ int main(int argc, char *argv[]){
         {
             printf("\nFailed to discover Manager, Closing");
             exit(1);
-        }
+        }        
         pthread_create(&monitoringThreadId, NULL, ParticipantMonitoringThread, &ManagerSock);
         pthread_create(&interfaceParticipantThreadId, NULL, interfaceThreadParticipant, NULL);
         pthread_create(&interfaceThreadId, NULL, printManagerThread, NULL);

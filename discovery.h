@@ -15,6 +15,8 @@
 #include <dirent.h>
 #include "monitoring.h"
 #include <errno.h>
+#include <net/if.h>
+#include <sys/ioctl.h>
 
 #define PORT 4000
 #define BUFFER_SIZE 1024
