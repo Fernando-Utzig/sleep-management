@@ -370,9 +370,9 @@ Operation_result removeParticipantFromTable(Participant *participant)
         {
             if(List.list[i].id==participant->id)
             {
-                List.list[i].id=-1;
                 if(List.list[i].is_manager==0)
                     destroyMonitoringInfo(&List.list[i]);
+                List.list[i].id=-1;
                 found=i;
                 res.result=1;
                 List.list_version++;
@@ -512,7 +512,7 @@ struct sockaddr_in *getParticipantAddress(Participant *participant,int port)
 
 void createMonitoringInfo(Participant *participant)
 {
-    fprintf(participant_logfile,"creating MOnitoringInfo for participant id: %d",participant->id);
+    fprintf(participant_logfile,"creating MonitoringInfo for participant id: %d",participant->id);
     MonitoringInfo *moni =(MonitoringInfo *) malloc(sizeof(MonitoringInfo));
     participant->monitoration= moni;
     moni->participant=CreateCopyParticipant(participant); //this is just so wrong
@@ -522,7 +522,12 @@ void createMonitoringInfo(Participant *participant)
 
 void destroyMonitoringInfo(Participant *participant)
 {
-
+    fprintf(participant_logfile,"Destroying Monitoring info Participant id: %d\n",participant->id);
+    if(participant->monitoration == NULL)
+    {
+        fprintf("Participant monitoration is NULL, can not destroy\n");
+        return;
+    }
     pthread_cancel(participant->monitoration->monitoringThread);
     free(participant->monitoration);
 }
