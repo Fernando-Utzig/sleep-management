@@ -71,7 +71,7 @@ void *interfaceThreadParticipant(void *arg) {
         removeEnterChar(command);
         if (strcmp(command,"EXIT")==0) {
             raise(SIGINT);
-        } else if (fgetsreturn!=NULL){
+        } else if (fgetsreturn!=NULL && strcmp(fgetsreturn,"\n")){
             printf("Comando inválido.\n");
         }
         fflush(stdin);
@@ -179,7 +179,7 @@ void *interfaceThreadManager(void *arg) {
             }
             break;
         default:
-            if(fgetsreturn!=NULL && fgetsreturn[0]!='\0'){
+            if(fgetsreturn!=NULL && fgetsreturn[0]!='\0' && fgetsreturn[0]!='\n'){
                 printf("Comando inválido.\n");
                 fprintf(interface_logfile,"fgetsreturn = %s\n",fgetsreturn);
             }

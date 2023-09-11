@@ -15,6 +15,7 @@
 #include <arpa/inet.h>
 #include "participants.h"
 #include "interface.h"
+#include "election.h"
 struct ParticipantData typedef Participant;
 struct Participant_List_Metadata typedef List_Participant;
 
