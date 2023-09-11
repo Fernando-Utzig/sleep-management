@@ -13,7 +13,7 @@
 #include <signal.h>
 
 #include "participants.h"
-#include "monitoring.h"
+//#include "monitoring.h"
 
 void *interfaceThreadParticipant(void *arg);
 void *interfaceThreadManager(void *arg);

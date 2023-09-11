@@ -14,13 +14,10 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include "participants.h"
-
+#include "interface.h"
 struct ParticipantData typedef Participant;
+struct Participant_List_Metadata typedef List_Participant;
 
-struct struct_SleepStatusRequest
-{
-    int isSleep;
-} typedef SleepStatusRequest;
 
 void *ParticipantMonitoringThread(void *arg);
 int sleepOrWakupParticipant(Participant *participant, int new_status);
