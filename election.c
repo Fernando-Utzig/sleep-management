@@ -8,13 +8,15 @@ struct struct_election
 int CallElection()
 {
     int i;
-    char message[1024];
-    strcpy(message, "ELECTION");
     int is_new_manager = 1;
+    Participant *self = getMyselfCopy();
+    List_Participant *List=getParticipant_list();
+
+
+
     
-    getMyselfCopy
     for (i=0; i<LIST_SIZE; i++) {
-        if(List.list[i].id != -1 && List.list[i].id > ) {
+        if(List->list[i].id != -1 && List->list[i].id > self->id) {
             
         }
     }
