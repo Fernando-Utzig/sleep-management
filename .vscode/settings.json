@@ -45,6 +45,8 @@
         "stdexcept": "cpp",
         "streambuf": "cpp",
         "typeinfo": "cpp",
-        "monitoring.h": "c"
+        "monitoring.h": "c",
+        "signal.h": "c",
+        "election.h": "c"
     }
 }

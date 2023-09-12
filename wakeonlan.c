@@ -12,6 +12,7 @@
 #include "monitoring.h"
 #include "interface.h"
 #include <signal.h>
+#include "election.h"
 
 #define MONITORING_PORT 8889
 #define PARTICIPANT_TABLE_SIZE 64
@@ -167,6 +168,7 @@ int main(int argc, char *argv[]){
         setInterfaceLogFile(openLogFile("Logs/interfaceLog_manager.txt"));
         setMonitoringLogFile(openLogFile("Logs/monitoringLog_manager.txt"));
         setParticipantsLogFile(openLogFile("Logs/participantLog_manager.txt"));
+        setElectionLogFile(openLogFile("Logs/electionLog_manager.txt"));
     }
     else
     {
@@ -174,6 +176,7 @@ int main(int argc, char *argv[]){
         setInterfaceLogFile(openLogFile("Logs/interfaceLog_1.txt"));
         setMonitoringLogFile(openLogFile("Logs/monitoringLog_1.txt"));
         setParticipantsLogFile(openLogFile("Logs/participantLog_1.txt"));
+        setElectionLogFile(openLogFile("Logs/electionLog_1.txt"));
     }
     
     init_participantList();

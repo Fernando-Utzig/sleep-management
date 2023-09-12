@@ -3,4 +3,5 @@
 #include "participants.h"
 
 int CallElection();
+void setElectionLogFile(FILE *file);
 #endif
