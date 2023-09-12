@@ -177,7 +177,7 @@ void setMySelf()
     myself.is_awaken = 1;
     myself.is_manager = 0;
     //fprintf(participant_logfile,"MyMac is =%s\n",myself.MAC);
-    strcpy(myself.Hostname,"3ESSO");
+    //strcpy(myself.Hostname,"3ESSO");
     //fprintf(participant_logfile,"hostname is = %s\n",myself.Hostname);
     //fprintf(participant_logfile,"myip is = %s\n",myself.ip_address);
 }
