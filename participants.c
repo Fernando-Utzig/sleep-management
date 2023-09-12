@@ -601,7 +601,7 @@ void createAllMonitoringInfo()
     int i;
     for(i=0;i<LIST_SIZE;i++)
     {
-        if(List.list[i].id !=-1){
+        if(List.list[i].id !=-1 && List.list[i].is_manager!=1){
             createMonitoringInfo(&List.list[i]);
         }
     }
