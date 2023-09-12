@@ -76,6 +76,7 @@ void *interfaceThreadParticipant(void *arg) {
         }
         if (strcmp(command,"MAN")==0) {
             raise(SIGUSR1);
+        }
         fflush(stdin);
     	}
     }

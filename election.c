@@ -64,7 +64,7 @@ void *CallElection(void *arg)
             setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
             binded=sockfd;
         }
-        
+
     }
     pthread_mutex_unlock(&election_is_happeningMutex);
     sockfd =binded;
@@ -73,7 +73,8 @@ void *CallElection(void *arg)
     if(do_election==0)
         return NULL;
     fprintf(election_logfile,"Election Started \n");
-    
+    sockfd =binded;
+
     for (i=0; i<LIST_SIZE; i++) {
         if(List->list[i].id != -1 && List->list[i].id < self->id) {
             fprintf(election_logfile,"Sending to %d \n",List->list[i].id);
@@ -102,7 +103,6 @@ void *CallElection(void *arg)
     }
     else
     {
-        
         recvfrom(sockfd, &receive, sizeof(List_Participant), 0,(struct sockaddr *) participantAddress, &len);
         
         fprintf(election_logfile,"Received ELECTED message (%d): %d\n",ELECTED,receive.election_command);
