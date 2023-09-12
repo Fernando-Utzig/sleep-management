@@ -63,7 +63,9 @@ void *CallElection(void *arg)
     fprintf(election_logfile,"Election Started \n");
     int sockfd = createSocketElection(PORT_CLIENT_SEND_ELECTION);
     for (i=0; i<LIST_SIZE; i++) {
-        if(List->list[i].id != -1 && List->list[i].id > self->id) {
+        if(List->list[i].id != -1 && List->list[i].id < self->id) {
+            fprintf(election_logfile,"Sending to %d \n",List->list[i].id);
+            fflush(election_logfile);
             participantAddress = getParticipantAddress(&List->list[i],PORT_CLIENT_RECEIVE_ELECT);
             send_ret =sendto(sockfd, &send, sizeof(List_Participant), 0,(struct sockaddr *) participantAddress, sizeof(struct sockaddr));
             recv_ret =recvfrom(sockfd, &receive, sizeof(List_Participant), 0,(struct sockaddr *) participantAddress, &len);
@@ -73,16 +75,18 @@ void *CallElection(void *arg)
             }
         }
     }
+    fprintf(election_logfile,"responses received %d \n",responses);
+    fflush(election_logfile);
     if(responses==0)
     {
         is_new_manager=1;
         send.election_command=ELECTED;
         for (i=0; i<LIST_SIZE; i++) {
-        if(List->list[i].id != -1) {
-            participantAddress = getParticipantAddress(&List->list[i],PORT_CLIENT_SEND_ELECTION);
-            send_ret =sendto(sockfd, &send, sizeof(List_Participant), 0,(struct sockaddr *) participantAddress, sizeof(struct sockaddr));
+            if(List->list[i].id != -1) {
+                participantAddress = getParticipantAddress(&List->list[i],PORT_CLIENT_SEND_ELECTION);
+                send_ret =sendto(sockfd, &send, sizeof(List_Participant), 0,(struct sockaddr *) participantAddress, sizeof(struct sockaddr));
+            }
         }
-    }
     }
     else
     {
@@ -139,7 +143,8 @@ void *RecieveElectionMessageThread(void *arg) {
     int send_ret;
     while (1) {
         n = recvfrom(sockfd, &receive,  sizeof(structElection), 0, (struct sockaddr*)&clientAddr, &len);
-        fprintf(election_logfile," n= %d\n",n);
+        if(n!=-1)
+            fprintf(election_logfile," n= %d\n",n);
         if (n > 0) {      
             switch (receive.election_command)
             {
