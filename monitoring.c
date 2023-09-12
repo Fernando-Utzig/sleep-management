@@ -27,9 +27,9 @@ void setMonitoringLogFile(FILE *file)
     else
     {
         monitoring_logfile=stderr;
-        //fprintf(monitoring_logfile,"discovery got a null file, using std err instead \n");
+        fprintf(monitoring_logfile,"discovery got a null file, using std err instead \n");
     }
-    //fprintf(monitoring_logfile,"monitoring_logfile set\n");
+    fprintf(monitoring_logfile,"monitoring_logfile set\n");
 }
 
 int compare_all(char* u,char*d,int len)
@@ -51,7 +51,7 @@ void removeEnterCharMon(char *string)
 {
     if(string == NULL)
     {
-        //fprintf(monitoring_logfile, "trying to remove \\n from NULL string");
+        fprintf(monitoring_logfile, "trying to remove \\n from NULL string");
         return;
     }
     int i;
@@ -63,7 +63,7 @@ void removeEnterCharMon(char *string)
 }
 
 int createSocketMon(int port, struct sockaddr_in *Manageraddress) {
-    //fprintf(monitoring_logfile,"Creating socket");
+    fprintf(monitoring_logfile,"Creating socket");
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     struct hostent *server;
     if (sockfd < 0) {
@@ -83,18 +83,18 @@ int createSocketMon(int port, struct sockaddr_in *Manageraddress) {
         close(sockfd);
         raise(SIGINT);
     }
-    //fprintf(monitoring_logfile,"Socket id = %d\n",sockfd);
+    fprintf(monitoring_logfile,"Socket id = %d\n",sockfd);
     struct timeval tv;
     
-    //fprintf(monitoring_logfile,"Monitoring Socket Created\n");
+    fprintf(monitoring_logfile,"Monitoring Socket Created\n");
     return sockfd;
 }
 
 void *ParticipantMonitoringThread(void *arg) {
-    //fprintf(monitoring_logfile,"\nStarting ParticipantMonitoringThread\n");
+    fprintf(monitoring_logfile,"\nStarting ParticipantMonitoringThread\n");
     struct sockaddr_in *clientAddr = (struct sockaddr_in *) arg;
     int sockfd = createSocketMon(PORT_CLIENT_MON,clientAddr);
-    //fprintf(monitoring_logfile,"Port Created\n");
+    fprintf(monitoring_logfile,"Port Created\n");
     MonitorResponse response;
     List_Participant *request=getParticipant_list();
     Participant *self = getMyselfCopy();
@@ -109,11 +109,11 @@ void *ParticipantMonitoringThread(void *arg) {
     setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     while (1) {
         n = recvfrom(sockfd, request,  sizeof(List_Participant), 0, (struct sockaddr*)clientAddr, &len);
-        //fprintf(monitoring_logfile," n= %d\n",n);
+        fprintf(monitoring_logfile," n= %d\n",n);
         if (n > 0) {
             time_left=3;
-            //fprintf(monitoring_logfile,"received packaged \n");
-            //fprintf(monitoring_logfile,"versao agora =%d, versao recebida: %d\n",version_now,request->list_version);
+            fprintf(monitoring_logfile,"received packaged \n");
+            fprintf(monitoring_logfile,"versao agora =%d, versao recebida: %d\n",version_now,request->list_version);
             fflush(monitoring_logfile);    
             if(request->list_version>version_now)
             {
@@ -124,18 +124,18 @@ void *ParticipantMonitoringThread(void *arg) {
             response.confirmed=1;
             response.version=version_now;        
             send_ret =sendto(sockfd, &response, sizeof(MonitorResponse), 0,(struct sockaddr *) clientAddr, sizeof(struct sockaddr));
-            //fprintf(monitoring_logfile,"send_ret = %d\n",send_ret);
+            fprintf(monitoring_logfile,"send_ret = %d\n",send_ret);
         }
         else
         {
             tv.tv_usec = 0;
             time_left--;
-            //fprintf(monitoring_logfile,"TIMEOUT to Manager time left = %d\n",time_left);
+            fprintf(monitoring_logfile,"TIMEOUT to Manager time left = %d\n",time_left);
             
             
             if(time_left<=0)
             {
-                //fprintf(monitoring_logfile,"LOST MANAGER, begin election!\n");
+                fprintf(monitoring_logfile,"LOST MANAGER, begin election!\n");
                 CallElection(NULL);
             }
             fflush(monitoring_logfile);
@@ -152,7 +152,7 @@ void *monitorParticipant(void *arg)
     List_Participant *request=getParticipant_list();
     MonitorResponse response;
     int send_ret,receive_ret;
-    //fprintf(monitoring_logfile,"created monitorParticipant\n");
+    fprintf(monitoring_logfile,"created monitorParticipant\n");
     struct sockaddr_in *participantAddress = getParticipantAddress(monoration->participant,PORT_CLIENT_MON); //this will read only, so no risk
     struct sockaddr_in responseAddress;
     socklen_t len = sizeof(responseAddress);
@@ -166,11 +166,11 @@ void *monitorParticipant(void *arg)
     setsockopt(threadPort, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     while(1)
     {
-        //fprintf(monitoring_logfile,"Sending List_Participant to participant: %s list version : %d\n",monoration->participant->Hostname, request->list_version);
+        fprintf(monitoring_logfile,"Sending List_Participant to participant: %s list version : %d\n",monoration->participant->Hostname, request->list_version);
         send_ret =sendto(threadPort, request, sizeof(List_Participant), 0,(struct sockaddr *) participantAddress, sizeof(struct sockaddr));
         if (send_ret < 0)
         {
-            //fprintf(monitoring_logfile,"ERROR sendto List_Participant: %d \n",send_ret);
+            fprintf(monitoring_logfile,"ERROR sendto List_Participant: %d \n",send_ret);
         }
             
         else
@@ -179,10 +179,10 @@ void *monitorParticipant(void *arg)
             if (receive_ret < 0)
             {
                 monoration->time_to_sleep--;
-                //fprintf(monitoring_logfile,"failed to receive List_Participant from %s time_to_sleep: %d\n",monoration->participant->Hostname,monoration->time_to_sleep);
+                fprintf(monitoring_logfile,"failed to receive List_Participant from %s time_to_sleep: %d\n",monoration->participant->Hostname,monoration->time_to_sleep);
                 if(monoration->time_to_sleep<=0 && monoration->participant->is_awaken==1)
                 {
-                    //fprintf(monitoring_logfile," %s is now declared Sleeping\n",monoration->participant->Hostname);
+                    fprintf(monitoring_logfile," %s is now declared Sleeping\n",monoration->participant->Hostname);
                     monoration->participant->is_awaken=0;
                     updateParticipant(monoration->participant);
                 }
@@ -193,7 +193,7 @@ void *monitorParticipant(void *arg)
                 monoration->time_to_sleep=3;
                 if(monoration->participant->is_awaken==0)
                 {
-                    //fprintf(monitoring_logfile," %s is now declared Active\n",monoration->participant->Hostname);
+                    fprintf(monitoring_logfile," %s is now declared Active\n",monoration->participant->Hostname);
                     monoration->participant->is_awaken=1;
                     updateParticipant(monoration->participant);
                 }

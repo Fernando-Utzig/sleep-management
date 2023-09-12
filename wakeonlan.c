@@ -29,7 +29,7 @@ FILE *openLogFile(char *name)
 
     if(name == NULL)
     {
-        //fprintf(stderr,"got a null filname\n");
+        fprintf(stderr,"got a null filname\n");
         return NULL;
     }
     int tries=0;
@@ -46,7 +46,7 @@ FILE *openLogFile(char *name)
     } while (file == NULL && tries<maxtries);
     if(tries >=maxtries)
     {
-        //fprintf(stderr,"FAILED to open any logfile\n");
+        fprintf(stderr,"FAILED to open any logfile\n");
         return NULL;
     }
     return file;
@@ -55,32 +55,36 @@ FILE *openLogFile(char *name)
 
 void destroyManagerAssets(pthread_t *discoveryThreadId,pthread_t *discoveryManagerThreadId,pthread_t *interfaceThreadId,pthread_t *displayThreadId)
 {
-    //fprintf(stderr,"Closing Thread discoveryThreadId %ld\n",*discoveryThreadId);
+    fprintf(stderr,"Closing Thread discoveryThreadId %ld\n",*discoveryThreadId);
     if(discoveryThreadId != 0)
     {
         pthread_cancel(*discoveryThreadId);
         discoveryThreadId=0;
     }
         
-    //fprintf(stderr,"Closing Thread interfaceThreadId %ld\n",*interfaceThreadId);
+    fprintf(stderr,"Closing Thread interfaceThreadId %ld\n",*interfaceThreadId);
     if(interfaceThreadId != 0)
     {
         pthread_cancel(*interfaceThreadId);
         interfaceThreadId=0;
     }
     fflush(stderr);
-    //fprintf(stderr,"Closing Thread displayThreadId %ld\n",*displayThreadId);
+    fprintf(stderr,"Closing Thread displayThreadId %ld\n",*displayThreadId);
     if(displayThreadId != 0)
     {
         pthread_cancel(*displayThreadId);
         displayThreadId=0;
     }
-    //fprintf(stderr,"Closing Thread monitoring threads \n");
+    fprintf(stderr,"Closing Thread monitoring threads \n");
     fflush(stderr);
     destroyAllMonitoringInfo();
+    fprintf(stderr,"resetinglist \n");
+    fflush(stderr);
     resetListForParticipant();
+    fprintf(stderr,"closing discovery socket \n");
+    fflush(stderr);
     closeDiscoverySocket();
-    closeMonitoringSocket();
+
 }
 
 
@@ -108,21 +112,21 @@ void runAsManager(pthread_t *discoveryThreadId,pthread_t *discoveryManagerThread
 
 void destroyParticipantAssets(pthread_t *monitoringThreadId,pthread_t *interfaceParticipantThreadId,pthread_t *interfaceThreadId)
 {
-    //fprintf(stderr,"Closing Thread monitoringThreadId %ld\n",*monitoringThreadId);
+    fprintf(stderr,"Closing Thread monitoringThreadId %ld\n",*monitoringThreadId);
     if(monitoringThreadId != 0)
     {
         pthread_cancel(*monitoringThreadId);
         monitoringThreadId=0;
     }
         
-    //fprintf(stderr,"Closing Thread interfaceParticipantThreadId %ld\n",*interfaceParticipantThreadId);
+    fprintf(stderr,"Closing Thread interfaceParticipantThreadId %ld\n",*interfaceParticipantThreadId);
     if(interfaceParticipantThreadId != 0)
     {
         pthread_cancel(*interfaceParticipantThreadId);
         interfaceParticipantThreadId=0;
     }
         
-    //fprintf(stderr,"Closing Thread interfaceThreadId %ld\n",*interfaceThreadId);
+    fprintf(stderr,"Closing Thread interfaceThreadId %ld\n",*interfaceThreadId);
     if(interfaceThreadId != 0)
     {
         pthread_cancel(*interfaceThreadId);
@@ -229,7 +233,7 @@ int main(int argc, char *argv[]){
     }
     closeDiscoverySocket();
     closeMonitoringSocket();
-    //fprintf(stderr,"Sockets Closed!\n");
+    fprintf(stderr,"Sockets Closed!\n");
     printf("Goodbye User!\n");
     fflush(stdout);
     fflush(stderr);

@@ -2,8 +2,8 @@
 
 FILE *election_logfile ;
 
-#define PORT_CLIENT_RECEIVE_ELECT 34034
-#define PORT_CLIENT_SEND_ELECTION 34033
+#define PORT_CLIENT_RECEIVE_ELECT 34134
+#define PORT_CLIENT_SEND_ELECTION 34133
 
 #define ELECTION 1
 #define ELECTED 2
@@ -31,6 +31,7 @@ struct struct_election
 
 
 int election_is_happening;
+int binded=0;
 pthread_mutex_t election_is_happeningMutex;
 pthread_t ElectionThread =0;
 void *CallElection(void *arg)
@@ -47,21 +48,32 @@ void *CallElection(void *arg)
     structElection receive;
     structElection send;
     pthread_mutex_lock(&election_is_happeningMutex);
+    int sockfd;
     if(election_is_happening == 1)
         do_election=0;
     else
     {
         do_election=1;
         election_is_happening=1;
+        if(binded==0)
+        {
+            sockfd = createSocketElection(PORT_CLIENT_SEND_ELECTION);
+            struct timeval tv;
+            tv.tv_sec = 3;
+            tv.tv_usec = 0;
+            setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+            binded=sockfd;
+        }
+        
     }
     pthread_mutex_unlock(&election_is_happeningMutex);
-    
+    sockfd =binded;
     send.election_command=ELECTION;
     int responses=0;
     if(do_election==0)
         return NULL;
     fprintf(election_logfile,"Election Started \n");
-    int sockfd = createSocketElection(PORT_CLIENT_SEND_ELECTION);
+    
     for (i=0; i<LIST_SIZE; i++) {
         if(List->list[i].id != -1 && List->list[i].id < self->id) {
             fprintf(election_logfile,"Sending to %d \n",List->list[i].id);
@@ -90,10 +102,7 @@ void *CallElection(void *arg)
     }
     else
     {
-        struct timeval tv;
-        tv.tv_sec = 10;
-        tv.tv_usec = 0;
-        setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+        
         recvfrom(sockfd, &receive, sizeof(List_Participant), 0,(struct sockaddr *) participantAddress, &len);
         
         fprintf(election_logfile,"Received ELECTED message (%d): %d\n",ELECTED,receive.election_command);
@@ -122,7 +131,7 @@ int createSocketElection(int port) {
     bzero(&(serverAddr.sin_zero), 8); 
     int bind_ret =bind(sockfd, (struct sockaddr*)&serverAddr, sizeof(serverAddr));
     if (bind_ret < 0) {
-        fprintf(election_logfile,"Failed to bind ELECTION the socket.bind_ret: %d\n",bind_ret);
+        fprintf(election_logfile,"Failed to bind ELECTION the socket(port %d).bind_ret: %d errno %d\n",port,bind_ret,errno);
         close(sockfd);
         raise(SIGINT);
     }

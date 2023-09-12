@@ -47,6 +47,8 @@
         "typeinfo": "cpp",
         "monitoring.h": "c",
         "signal.h": "c",
-        "election.h": "c"
+        "election.h": "c",
+        "cerrno": "c",
+        "errno.h": "c"
     }
 }

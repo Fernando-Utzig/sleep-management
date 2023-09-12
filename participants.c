@@ -28,9 +28,9 @@ void setParticipantsLogFile(FILE *file)
     else
     {
         participant_logfile=stderr;
-        //fprintf(participant_logfile,"discovery got a null file, using std err instead \n");
+        fprintf(participant_logfile,"discovery got a null file, using std err instead \n");
     }
-    //fprintf(participant_logfile,"participant_logfile set\n");
+    fprintf(participant_logfile,"participant_logfile set\n");
 }
 
 void printAllParticipants()
@@ -111,10 +111,10 @@ void getMyMac(char *myMac)
         return;
     }
     
-    //fprintf(participant_logfile,"ep = %s\n",ep->d_name);
+    fprintf(participant_logfile,"ep = %s\n",ep->d_name);
     strcat(address_path,ep->d_name);
     strcat(address_path,"/address");
-    //fprintf(participant_logfile,"address path used = %s\n",address_path);
+    fprintf(participant_logfile,"address path used = %s\n",address_path);
     FILE * eth0 = fopen(address_path, "r");
 	if(eth0 == NULL)
 	{
@@ -136,10 +136,10 @@ void setMySelfIpOnLan(char *ip)
 {
     if( ip == NULL)
     {
-        //fprintf(participant_logfile,"Tried to set NULL IP\n");
+        fprintf(participant_logfile,"Tried to set NULL IP\n");
         return;
     }
-    //fprintf(participant_logfile,"my now ip is %s\n",ip);
+    fprintf(participant_logfile,"my now ip is %s\n",ip);
     strcpy(myself.ip_address,ip);
     updateParticipant(&myself);
     return;
@@ -156,7 +156,7 @@ void setMySelfId(int id)
 void setMySelf()
 {
     struct hostent *myhost;
-    //fprintf(participant_logfile,"Getting My Participant Info\n");
+    fprintf(participant_logfile,"Getting My Participant Info\n");
     char *myip;
     getMyMac(myself.MAC);
     if(gethostname(myself.Hostname,sizeof(myself.Hostname)) == -1)
@@ -176,17 +176,17 @@ void setMySelf()
     }
     myself.is_awaken = 1;
     myself.is_manager = 0;
-    //fprintf(participant_logfile,"MyMac is =%s\n",myself.MAC);
-    strcpy(myself.Hostname,"3ESSO");
-    //fprintf(participant_logfile,"hostname is = %s\n",myself.Hostname);
-    //fprintf(participant_logfile,"myip is = %s\n",myself.ip_address);
+    fprintf(participant_logfile,"MyMac is =%s\n",myself.MAC);
+    //strcpy(myself.Hostname,"3ESSO");
+    fprintf(participant_logfile,"hostname is = %s\n",myself.Hostname);
+    fprintf(participant_logfile,"myip is = %s\n",myself.ip_address);
 }
 
 
 void init_participantList(void)
 {
     int i;
-    //fprintf(participant_logfile,"Inicianting Participant List\n");
+    fprintf(participant_logfile,"Inicianting Participant List\n");
     fflush(participant_logfile);
     for(i=0;i<LIST_SIZE;i++)
     {
@@ -196,7 +196,7 @@ void init_participantList(void)
     List.list_version=0;
     List.list_size=0;
     List.maxId=1;
-    //fprintf(participant_logfile,"participants List iniciated\n");
+    fprintf(participant_logfile,"participants List iniciated\n");
     readers=0;
     sem_init(&ReadersAreInRoom, 0, 1);
 } 
@@ -220,7 +220,7 @@ void copystring(char *dest,char *source,int lenght)
 }
 Participant *Create_Participant(char* Message,int message_lenght)
 {
-    //fprintf(participant_logfile,"printa isso Create_Participant\n");
+    fprintf(participant_logfile,"printa isso Create_Participant\n");
     Participant* new_participant = (Participant *)malloc(sizeof( Participant));
     char temp[Participant_Name_size];
     int i =0;
@@ -230,11 +230,11 @@ Participant *Create_Participant(char* Message,int message_lenght)
     new_participant->id=List.maxId;
     List.maxId++;
     mac_index = get_index(Message,message_lenght);
-    //fprintf(participant_logfile,"i eh = %d a mensagem é = %s\n", mac_index,Message);
-    //fprintf(participant_logfile,"mac_index=%d bate em %c\n",mac_index,Message[mac_index]);
+    fprintf(participant_logfile,"i eh = %d a mensagem é = %s\n", mac_index,Message);
+    fprintf(participant_logfile,"mac_index=%d bate em %c\n",mac_index,Message[mac_index]);
     copystring(new_participant->MAC,Message,mac_index);
     hostname_index = get_index(&Message[mac_index+1],message_lenght-mac_index)+mac_index+1;
-    //fprintf(participant_logfile,"ip_index=%d bate em %c\n",hostname_index,Message[hostname_index]);
+    fprintf(participant_logfile,"ip_index=%d bate em %c\n",hostname_index,Message[hostname_index]);
     copystring(new_participant->Hostname,&Message[mac_index+1],hostname_index - mac_index - 1);
     ip_index = get_index(&Message[hostname_index+1],message_lenght-hostname_index);
     copystring(new_participant->ip_address,&Message[hostname_index+1],ip_index);
@@ -250,10 +250,10 @@ Participant *Create_Participant(char* Message,int message_lenght)
 Operation_result AddParticipantToTable(Participant *participant)
 {
     Operation_result res;
-    //fprintf(participant_logfile,"Adding participant\n");
+    fprintf(participant_logfile,"Adding participant\n");
     if(participant == NULL)
     {
-        //fprintf(participant_logfile,"AddParticipantToTable participant is NULL\n");
+        fprintf(participant_logfile,"AddParticipantToTable participant is NULL\n");
         res.id=-1;
         res.result=-5;
         return res;
@@ -273,7 +273,7 @@ Operation_result AddParticipantToTable(Participant *participant)
     }
     if(found!=-1)
     {
-        //fprintf(participant_logfile,"achou mesmo id/hostname\n");
+        fprintf(participant_logfile,"achou mesmo id/hostname\n");
         fflush(participant_logfile);
         
         res.result= 2;
@@ -285,7 +285,7 @@ Operation_result AddParticipantToTable(Participant *participant)
         {
             if(List.list[i].id == -1)
             {
-                //fprintf(participant_logfile,"Achou espaço! index = %d\n",i);
+                fprintf(participant_logfile,"Achou espaço! index = %d\n",i);
                 found =i;
                 break;
             }
@@ -311,7 +311,7 @@ Operation_result AddParticipantToTable(Participant *participant)
     
     pthread_mutex_unlock(&participantsMutex);// now all readers/writers can enter
     sem_post(&ReadersAreInRoom);//room is empty
-    //fprintf(participant_logfile,"Adding participant result value : %d id; %d\n",res.result,res.id);
+    fprintf(participant_logfile,"Adding participant result value : %d id; %d\n",res.result,res.id);
     fflush(participant_logfile);
     display();
     return res;
@@ -323,11 +323,11 @@ Operation_result updateParticipant(Participant *participant)
 {
     Participant *tmp;
     Operation_result res;
-    //fprintf(participant_logfile,"Updating participant\n");
+    fprintf(participant_logfile,"Updating participant\n");
     fflush(participant_logfile);
     if(participant == NULL)
     {
-        //fprintf(participant_logfile,"Trying to update NULL participant\n");
+        fprintf(participant_logfile,"Trying to update NULL participant\n");
         res.result=5;
         res.id=-1;
         return res;
@@ -335,14 +335,14 @@ Operation_result updateParticipant(Participant *participant)
     int i, found= -1;
     pthread_mutex_lock(&participantsMutex);
     sem_wait(&ReadersAreInRoom);//wait until all readers leave
-    //fprintf(participant_logfile,"finding participant\n");
+    fprintf(participant_logfile,"finding participant\n");
     fflush(participant_logfile);
     for(i=0;i<LIST_SIZE;i++)
     {
         if(List.list[i].id==participant->id)
         {
             found =i;
-            //fprintf(participant_logfile,"Found participant with id=%d index=%d\n",participant->id,i);
+            fprintf(participant_logfile,"Found participant with id=%d index=%d\n",participant->id,i);
             break;
         }
     }
@@ -350,7 +350,7 @@ Operation_result updateParticipant(Participant *participant)
     {
         res.result= -1;
         res.id=participant->id;;
-        //fprintf(participant_logfile,"Did not Found participant with id=%d \n",participant->id);
+        fprintf(participant_logfile,"Did not Found participant with id=%d \n",participant->id);
     }
     else
     {
@@ -372,13 +372,13 @@ Operation_result removeParticipantFromTable(Participant *participant)
     Operation_result res;
     if(participant == NULL)
     {
-        //fprintf(participant_logfile,"Trying to remove NULL participant\n");
+        fprintf(participant_logfile,"Trying to remove NULL participant\n");
         fflush(participant_logfile);
         res.result=-5;
         res.id=-1;
         return res;
     }
-    //fprintf(participant_logfile,"Removin Participant with id =%d\n",participant->id);
+    fprintf(participant_logfile,"Removin Participant with id =%d\n",participant->id);
     int i, found =-1;
     res.id=participant->id;
     pthread_mutex_lock(&participantsMutex);
@@ -401,7 +401,7 @@ Operation_result removeParticipantFromTable(Participant *participant)
     if(found==-1)
         res.result=-1;
     display();
-    //fprintf(participant_logfile,"removing result: %d index found =%d\n",res.result,found);
+    fprintf(participant_logfile,"removing result: %d index found =%d\n",res.result,found);
     fflush(participant_logfile);
     return res;
 }
@@ -430,7 +430,7 @@ void printParticipant(Participant *participant)
 
 void copyParticipant(Participant *copy,Participant *original)
 {
-    //fprintf(participant_logfile,"copying participant\n");
+    fprintf(participant_logfile,"copying participant\n");
     copy->id=original->id;
     strcpy(copy->Hostname,original->Hostname);
     strcpy(copy->ip_address,original->ip_address);
@@ -448,7 +448,7 @@ Participant * CreateCopyParticipant(Participant *original)
 
 Participant *getMyselfCopy()
 {
-    //fprintf(participant_logfile,"Creatring copy of myself\n");
+    fprintf(participant_logfile,"Creatring copy of myself\n");
     Participant *copy;
     pthread_mutex_lock(&myselfMutex);
     copy = CreateCopyParticipant(&myself);
@@ -458,7 +458,7 @@ Participant *getMyselfCopy()
 
 Participant *getManagerCopy()
 {
-    //fprintf(participant_logfile,"Creatring copy of myself\n");
+    fprintf(participant_logfile,"Creatring copy of myself\n");
     Participant *copy;
     copy = CreateCopyParticipant(Manager);
     return copy;
@@ -469,7 +469,7 @@ Participant *getParticipant(char *hostname)
     Participant *tmp=NULL;
     if(hostname == NULL)
     {
-        //fprintf(participant_logfile,"ERROR Mac is null ");
+        fprintf(participant_logfile,"ERROR Mac is null ");
         return NULL;
     }
     int i, found= -1;
@@ -544,29 +544,29 @@ struct sockaddr_in *getParticipantAddress(Participant *participant,int port)
 {
     if(participant == NULL)
     {
-        //fprintf(participant_logfile,"Error on getting participant address, participant is null \n");
+        fprintf(participant_logfile,"Error on getting participant address, participant is null \n");
         return NULL;
     }
     if(participant->ip_address == NULL )
     {
-        //fprintf(participant_logfile,"Error on getting participant address, participant ip_address is null \n");
+        fprintf(participant_logfile,"Error on getting participant address, participant ip_address is null \n");
         return NULL;
     }
     struct sockaddr_in *serverAddr = (struct sockaddr_in *) malloc(sizeof(struct sockaddr_in));
     int worked = inet_aton(participant->ip_address,&serverAddr->sin_addr);
-    //fprintf(participant_logfile, "worked: %d", worked);
+    fprintf(participant_logfile, "worked: %d", worked);
     fflush(participant_logfile);
     serverAddr->sin_family = AF_INET;
-    serverAddr->sin_port = htons(port+participant->id);
+    serverAddr->sin_port = htons(port);
     return serverAddr;
 }
 
 void createMonitoringInfo(Participant *participant)
 {
-    //fprintf(participant_logfile,"creating MonitoringInfo for participant id: %d\n",participant->id);
+    fprintf(participant_logfile,"creating MonitoringInfo for participant id: %d\n",participant->id);
     if(participant->is_manager==1)
     {
-        //fprintf(participant_logfile,"Can not create monitoringInfo for the manager\n");
+        fprintf(participant_logfile,"Can not create monitoringInfo for the manager\n");
         fflush(participant_logfile);
         return;
     }
@@ -579,10 +579,10 @@ void createMonitoringInfo(Participant *participant)
 
 void destroyMonitoringInfo(Participant *participant)
 {
-    //fprintf(participant_logfile,"Destroying Monitoring info Participant id: %d\n",participant->id);
+    fprintf(participant_logfile,"Destroying Monitoring info Participant id: %d\n",participant->id);
     if(participant->monitoration == NULL)
     {
-        //fprintf(participant_logfile,"Participant monitoration is NULL, can not destroy\n");
+        fprintf(participant_logfile,"Participant monitoration is NULL, can not destroy\n");
         return;
     }
     

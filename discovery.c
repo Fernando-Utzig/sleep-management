@@ -32,9 +32,9 @@ void setDiscoveryLogFile(FILE *file)
     else
     {
         discovery_logfile=stderr;
-        //fprintf(discovery_logfile,"discovery got a null file, using stderr instead \n");
+        fprintf(discovery_logfile,"discovery got a null file, using stderr instead \n");
     }
-    //fprintf(discovery_logfile,"discovery_logfile set\n");
+    fprintf(discovery_logfile,"discovery_logfile set\n");
 }
 
 int createSocket(int port, char serverName[]) {
@@ -85,8 +85,8 @@ int createSocket(int port, char serverName[]) {
         else
             MySocket =sockfd;
     }
-    //fprintf(discovery_logfile,"Socket id = %d",sockfd);
-    //fprintf(discovery_logfile,"\tDiscovery Socket Created\n");
+    fprintf(discovery_logfile,"Socket id = %d",sockfd);
+    fprintf(discovery_logfile,"\tDiscovery Socket Created\n");
     return sockfd;
 }
 
@@ -110,7 +110,7 @@ void closeDiscoverySocket()
 //}
 
 void *discoveryThread(void *arg) {
-    //fprintf(discovery_logfile,"Starting Discovery\n");
+    fprintf(discovery_logfile,"Starting Discovery\n");
     int sockfd = createSocket(PORT,NULL);
     Participant *self=getMyselfCopy();
     if(sockfd == -1)
@@ -129,12 +129,12 @@ void *discoveryThread(void *arg) {
         n = recvfrom(sockfd, &received_package, sizeof(discovery_package), 0, (struct sockaddr*)&clientAddr, &len);        
         if (n > 0) {
             ip_rev = inet_ntoa(clientAddr.sin_addr);
-            //fprintf(discovery_logfile,"ip_rev = %s\n",ip_rev);
+            fprintf(discovery_logfile,"ip_rev = %s\n",ip_rev);
             strcpy(received_package.part.ip_address,ip_rev);
-            //fprintf(discovery_logfile," n= %d\n",n);
-            //fprintf(discovery_logfile,"no n \n");
-            //fprintf(discovery_logfile,"received packaged \n");
-            //fprintf(discovery_logfile,"command received: %d Mac:%s\n",received_package.command,received_package.part.MAC);
+            fprintf(discovery_logfile," n= %d\n",n);
+            fprintf(discovery_logfile,"no n \n");
+            fprintf(discovery_logfile,"received packaged \n");
+            fprintf(discovery_logfile,"command received: %d Mac:%s\n",received_package.command,received_package.part.MAC);
             if(received_package.command == NEW_ENTRY_COMMAND)
                 operation_result=AddParticipantToTable(&received_package.part);
             if(received_package.command == EXIT_PARTICIPANT_COMMAND)
@@ -143,11 +143,11 @@ void *discoveryThread(void *arg) {
             send_package->result = operation_result.result;
             send_package->new_id=operation_result.id;
             strcpy(send_package->extra,ip_rev);
-            //fprintf(discovery_logfile,"operation_result result: %d id:%d\n",operation_result.result,operation_result.id);
+            fprintf(discovery_logfile,"operation_result result: %d id:%d\n",operation_result.result,operation_result.id);
             if(self->id != received_package.part.id)
             send_ret = sendto(sockfd, send_package, sizeof(discovery_package), 0,(struct sockaddr *) &clientAddr, sizeof(struct sockaddr));
             free(send_package);
-            //fprintf(discovery_logfile,"send_ret = %d\n",send_ret);
+            fprintf(discovery_logfile,"send_ret = %d\n",send_ret);
         }
         fflush(discovery_logfile);
     }
@@ -155,7 +155,7 @@ void *discoveryThread(void *arg) {
 
 discovery_package *createDiscoveryPackage(int command)
 {
-    //fprintf(discovery_logfile,"creating discovery packaged\n");
+    fprintf(discovery_logfile,"creating discovery packaged\n");
     discovery_package *packaged = (discovery_package *) malloc(sizeof(discovery_package));
     packaged->command = command;
     packaged->result =0;
@@ -185,7 +185,7 @@ int sendDiscoverypackaged(struct sockaddr_in *Manageraddress)
     setsockopt(MySocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     if(server == NULL)
     {
-        //fprintf(discovery_logfile,"problem finding master server\n");
+        fprintf(discovery_logfile,"problem finding master server\n");
     }
 	serveraddress.sin_addr = *((struct in_addr *)server->h_addr);
     receive = 0; //Mudar para receber confirmacao
@@ -193,18 +193,18 @@ int sendDiscoverypackaged(struct sockaddr_in *Manageraddress)
     struct in_addr ip_addr;
     char *some_addr;
     do{
-        //fprintf(discovery_logfile,"sending discovery package\n");
+        fprintf(discovery_logfile,"sending discovery package\n");
         send = sendto(MySocket, send_packaged, sizeof(discovery_package), 0, (const struct sockaddr *) &serveraddress, sizeof(struct sockaddr_in));
-        //fprintf(discovery_logfile," send value = %d\n",receive);
+        fprintf(discovery_logfile," send value = %d\n",receive);
         if (send < 0) 
             fprintf(discovery_logfile,"ERROR sendto: %d \n",send);
         else
         {
             receive = recvfrom(MySocket, &received_packaged, sizeof(discovery_package), 0, (struct sockaddr *) Manageraddress, &length);
-            //fprintf(discovery_logfile,"receive command: %d result: %d manager.mac= %s\n",received_packaged.command,received_packaged.result,received_packaged.part.MAC);
-            //fprintf(discovery_logfile," Manager ip(in integer)= %u\n",Manageraddress->sin_addr.s_addr);
+            fprintf(discovery_logfile,"receive command: %d result: %d manager.mac= %s\n",received_packaged.command,received_packaged.result,received_packaged.part.MAC);
+            fprintf(discovery_logfile," Manager ip(in integer)= %u\n",Manageraddress->sin_addr.s_addr);
             some_addr = inet_ntoa(Manageraddress->sin_addr);
-            //fprintf(discovery_logfile," Manager ip(in string)= %s\n",some_addr);
+            fprintf(discovery_logfile," Manager ip(in string)= %s\n",some_addr);
             strcpy(received_packaged.part.ip_address,some_addr);
             setMySelfIpOnLan(received_packaged.extra);
             setMySelfId(received_packaged.new_id);
@@ -225,7 +225,7 @@ int sendDiscoverypackaged(struct sockaddr_in *Manageraddress)
 
 int sendExitRequest(Participant *manager)
 {
-    //fprintf(discovery_logfile,"in sendExitRequest\n");
+    fprintf(discovery_logfile,"in sendExitRequest\n");
     fflush(discovery_logfile);
     int send_ret,receive_ret, request_result;
     discovery_package *send_packaged =createDiscoveryPackage(EXIT_PARTICIPANT_COMMAND);
@@ -235,23 +235,23 @@ int sendExitRequest(Participant *manager)
     
     if(managerAddress == NULL)
     {
-        //fprintf(discovery_logfile,"Failed to send request: managerAddress is NULL\n");
+        fprintf(discovery_logfile,"Failed to send request: managerAddress is NULL\n");
         return -1;
     }
     socklen_t len = sizeof(struct sockaddr_in);
     if(send_packaged == NULL)
     {
-        //fprintf(discovery_logfile,"Failed to send send_packaged: send_packaged is NULL\n");
+        fprintf(discovery_logfile,"Failed to send send_packaged: send_packaged is NULL\n");
         return -1;
     }
-    //fprintf(discovery_logfile,"exit sockfd = %d\n",MySocket);
+    fprintf(discovery_logfile,"exit sockfd = %d\n",MySocket);
     struct timeval tv;
     tv.tv_sec = 10;
     tv.tv_usec = 0;    
-    //fprintf(discovery_logfile,"setsockopt: %d errno: %d\n",setsockopt(MySocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv),errno);
+    fprintf(discovery_logfile,"setsockopt: %d errno: %d\n",setsockopt(MySocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv),errno);
     do
     {
-        //fprintf(discovery_logfile,"Sending EXIT Request try(%d)\n",tries);
+        fprintf(discovery_logfile,"Sending EXIT Request try(%d)\n",tries);
         send_ret =sendto(MySocket, send_packaged, sizeof(discovery_package), 0,(struct sockaddr *) managerAddress, sizeof(struct sockaddr));
         if (send_ret < 0) 
             fprintf(discovery_logfile,"ERROR sendto: %d \n",send_ret);
@@ -276,7 +276,7 @@ int sendExitRequest(Participant *manager)
 
 void *discoveryManagerThread(void *arg) {
     struct sockaddr_in Manageraddress;
-    //fprintf(discovery_logfile,"Starting Discovery Manager\n");
+    fprintf(discovery_logfile,"Starting Discovery Manager\n");
     unsigned int length;
     struct sockaddr_in serveraddress;
     discovery_package *send_packaged =createDiscoveryPackage(NEW_ENTRY_COMMAND);
@@ -297,7 +297,7 @@ void *discoveryManagerThread(void *arg) {
     setsockopt(MySocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     if(server == NULL)
     {
-        //fprintf(discovery_logfile,"problem finding master server\n");
+        fprintf(discovery_logfile,"problem finding master server\n");
     }
 	serveraddress.sin_addr = *((struct in_addr *)server->h_addr);
     receive = 0; //Mudar para receber confirmacao
@@ -305,9 +305,9 @@ void *discoveryManagerThread(void *arg) {
     char *some_addr;
     int keepRunning=1;
     do{
-        //fprintf(discovery_logfile,"sending discovery package\n");
+        fprintf(discovery_logfile,"sending discovery package\n");
         send = sendto(MySocket, send_packaged, sizeof(discovery_package), 0, (const struct sockaddr *) &serveraddress, sizeof(struct sockaddr_in));
-        //fprintf(discovery_logfile," send value = %d\n",receive);
+        fprintf(discovery_logfile," send value = %d\n",receive);
         if (send < 0) 
             fprintf(discovery_logfile,"ERROR sendto: %d \n",send);
         else
@@ -315,10 +315,10 @@ void *discoveryManagerThread(void *arg) {
             receive = recvfrom(MySocket, &received_packaged, sizeof(discovery_package), 0, (struct sockaddr *) &Manageraddress, &length);
             if(receive>0)
             {
-                //fprintf(discovery_logfile,"receive command: %d result: %d manager.mac= %s\n",received_packaged.command,received_packaged.result,received_packaged.part.MAC);
-                //fprintf(discovery_logfile," Manager ip(in integer)= %u\n",Manageraddress.sin_addr.s_addr);
+                fprintf(discovery_logfile,"receive command: %d result: %d manager.mac= %s\n",received_packaged.command,received_packaged.result,received_packaged.part.MAC);
+                fprintf(discovery_logfile," Manager ip(in integer)= %u\n",Manageraddress.sin_addr.s_addr);
                 some_addr = inet_ntoa(Manageraddress.sin_addr);
-                //fprintf(discovery_logfile," Manager ip(in string)= %s\n",some_addr);
+                fprintf(discovery_logfile," Manager ip(in string)= %s\n",some_addr);
                 strcpy(received_packaged.part.ip_address,some_addr);
                 setMySelfIpOnLan(received_packaged.extra);
                 setMySelfId(received_packaged.new_id);
@@ -333,7 +333,7 @@ void *discoveryManagerThread(void *arg) {
             usleep(100);
     }while(keepRunning);
     free(send_packaged);
-    //fprintf(discovery_logfile," Virando participante\n");
+    fprintf(discovery_logfile," Virando participante\n");
     fflush(discovery_logfile);
     raise(SIGUSR2);
 }
