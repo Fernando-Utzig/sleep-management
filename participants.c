@@ -557,7 +557,7 @@ struct sockaddr_in *getParticipantAddress(Participant *participant,int port)
     //fprintf(participant_logfile, "worked: %d", worked);
     fflush(participant_logfile);
     serverAddr->sin_family = AF_INET;
-    serverAddr->sin_port = htons(port+participant->id);
+    serverAddr->sin_port = htons(port);
     return serverAddr;
 }
 
