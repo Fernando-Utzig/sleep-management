@@ -56,8 +56,14 @@ void *CallElection(void *arg)
         do_election=1;
         election_is_happening=1;
         if(binded==0)
+        {
             sockfd = createSocketElection(PORT_CLIENT_SEND_ELECTION);
-        binded=sockfd;
+            struct timeval tv;
+            tv.tv_sec = 3;
+            tv.tv_usec = 0;
+            setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+            binded=sockfd;
+        }
     }
     pthread_mutex_unlock(&election_is_happeningMutex);
     
@@ -95,9 +101,7 @@ void *CallElection(void *arg)
     }
     else
     {
-        struct timeval tv;
-        tv.tv_sec = 10;
-        tv.tv_usec = 0;
+        
         setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
         recvfrom(sockfd, &receive, sizeof(List_Participant), 0,(struct sockaddr *) participantAddress, &len);
         
