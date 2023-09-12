@@ -124,11 +124,12 @@ void destroyParticipantAssets(pthread_t *monitoringThreadId,pthread_t *interface
     }
 }
 
-void runAsParticipant(pthread_t *monitoringThreadId,pthread_t *interfaceParticipantThreadId,pthread_t *interfaceThreadId)
+void runAsParticipant(pthread_t *monitoringThreadId,pthread_t *interfaceParticipantThreadId,pthread_t *interfaceThreadId, pthread_t *electionThreadId)
 {
     pthread_create(monitoringThreadId, NULL, ParticipantMonitoringThread, &ManagerSock);
     pthread_create(interfaceParticipantThreadId, NULL, interfaceThreadParticipant, NULL);
     pthread_create(interfaceThreadId, NULL, displayParticipantsTable, NULL);
+    pthread_create(electionThreadId, NULL, RecieveElectionMessageThread, NULL);
     while(keepRunning==1 && isManager==0)
     {
     }
@@ -154,7 +155,7 @@ void ReceiveInterruption(int signalvalue)
     keepRunning =0;
 }
 int main(int argc, char *argv[]){
-    pthread_t discoveryThreadId =0, interfaceThreadId=0, interfaceParticipantThreadId=0, monitoringThreadId=0, managementThreadId =0,displayThreadId=0;
+    pthread_t discoveryThreadId =0, interfaceThreadId=0, interfaceParticipantThreadId=0, monitoringThreadId=0, managementThreadId =0,displayThreadId=0, electionThreadId=0;
     
     
     Participant *tmp;
@@ -198,7 +199,7 @@ int main(int argc, char *argv[]){
         if(isManager==1 && keepRunning==1)
             runAsManager(&discoveryThreadId,&interfaceThreadId,&displayThreadId);
         else if(isManager==0 && keepRunning==1)
-            runAsParticipant(&monitoringThreadId,&interfaceParticipantThreadId,&interfaceThreadId);
+            runAsParticipant(&monitoringThreadId,&interfaceParticipantThreadId,&interfaceThreadId,&electionThreadId);
     }
     if(isManager==0)
     {

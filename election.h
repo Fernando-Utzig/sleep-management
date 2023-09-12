@@ -1,5 +1,6 @@
 #ifndef H_ELECTION
 #define H_ELECTION
+#include "participants.h"
 
-void CallElection();
+int CallElection();
 #endif

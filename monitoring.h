@@ -25,6 +25,6 @@ int sleepOrWakupParticipant(Participant *participant, int new_status);
 void closeMonitoringSocket();
 void setMonitoringLogFile(FILE *file);
 void *monitorParticipant(void *arg);
-
+void *RecieveElectionMessageThread(void *arg);
 
 #endif
