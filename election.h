@@ -2,6 +2,7 @@
 #define H_ELECTION
 #include "participants.h"
 
-int CallElection();
+void * CallElection(void *arg);
 void setElectionLogFile(FILE *file);
+void *RecieveElectionMessageThread(void *arg);
 #endif

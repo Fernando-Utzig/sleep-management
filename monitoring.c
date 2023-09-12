@@ -4,7 +4,6 @@
 #include "monitoring.h"
 #define PORT_CLIENT_MON 34024
 #define PORT_MANAGER_MON 34025
-#define PORT_CLIENT_ELECTION 34026
 #define BUFFER_SIZE_MON 1024
 #define CONFIRMATION_TRIES 3
 
@@ -80,7 +79,7 @@ int createSocketMon(int port, struct sockaddr_in *Manageraddress) {
     
     bzero(&(serverAddr.sin_zero), 8); 
     if (bind(sockfd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
-        printf("Failed to bind the socket.\n");
+        printf("Failed to bind the MONITORING socket.\n");
         close(sockfd);
         raise(SIGINT);
     }
@@ -136,7 +135,7 @@ void *ParticipantMonitoringThread(void *arg) {
             if(time_left<=0)
             {
                 fprintf(monitoring_logfile,"LOST MANAGER, begin election!\n");
-                CallElection();
+                CallElection(NULL);
             }
             fflush(monitoring_logfile);
         }
@@ -205,31 +204,5 @@ void *monitorParticipant(void *arg)
 
 }
 
-void *RecieveElectionMessageThread(void *arg) {
-    struct sockaddr_in *clientAddr = (struct sockaddr_in *) arg;
-    int sockfd = createSocketMon(PORT_CLIENT_ELECTION,clientAddr);
-    fprintf(monitoring_logfile,"Port Created\n");
 
-    socklen_t len = sizeof(struct sockaddr_in);
-    int n;
-    struct timeval tv;
-    tv.tv_sec = 2;
-    tv.tv_usec = 0;
-    int time_left=3;
-    char message[1024];
-    char send_ret[1024] = "ACK";
-    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
-    while (1) {
-        n = recvfrom(sockfd, (char *)message,  1024, 0, (struct sockaddr*)clientAddr, &len);
-        fprintf(monitoring_logfile," n= %d\n",n);
-        if (n > 0) {      
-            if (strcmp(message, "ELECTION") == 0) {
-                n = sendto(sockfd, (char *)send_ret, 1024, 0, (struct sockaddr *) clientAddr, sizeof(struct sockaddr));
-                CallElection();
-            }
-        }
-        fflush(monitoring_logfile);
-    }
-    return NULL;
-}
 #endif
