@@ -18,9 +18,9 @@
 #include <net/if.h>
 #include <sys/ioctl.h>
 
-#define PORT 4000
+#define PORT 34000
 #define BUFFER_SIZE 1024
-#define PORT_CLIENT 4026
+#define PORT_CLIENT 34026
 void setDiscoveryLogFile(FILE *file);
 int sendDiscoverypackaged(struct sockaddr_in *Manageraddress);
 void *discoveryThread(void *arg);

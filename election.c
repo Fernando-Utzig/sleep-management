@@ -2,7 +2,7 @@
 
 FILE *election_logfile ;
 
-#define PORT_CLIENT_ELECT 4031
+#define PORT_CLIENT_ELECT 34031
 void setElectionLogFile(FILE *file)
 {
     if(file != NULL)
