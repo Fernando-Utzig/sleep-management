@@ -97,17 +97,7 @@ void closeDiscoverySocket()
     return;
 }
 
-//struct sockaddr*copyClientAddress(struct sockaddr*client) //in case we need a another thread to proccess discovery packages
-//{
-//    struct sockaddr* copy = (struct sockaddr*) malloc(sizeof(struct sockaddr));
-//    copy->sin_family=client->sin_family;
-//    copy->sin_port=client->sin_port;
-//    copy->sin_addr.s_addr=client->sin_addr.s_addr;
-//    int i;
-//    for(i=0;i<8;i++)
-//        copy->sin_zero[i]=client->sin_zero[i];
-//    return copy;
-//}
+
 
 void *discoveryThread(void *arg) {
     fprintf(discovery_logfile,"Starting Discovery\n");
@@ -231,11 +221,11 @@ int sendExitRequest(Participant *manager)
     discovery_package *send_packaged =createDiscoveryPackage(EXIT_PARTICIPANT_COMMAND);
     discovery_package received_packaged;
     int tries =0;
-    struct sockaddr_in *managerAddress = getParticipantAddress(manager,PORT);
+    struct sockaddr_in managerAddress;
     
-    if(managerAddress == NULL)
+    if(getParticipantAddress(manager,PORT,&managerAddress) == NULL)
     {
-        fprintf(discovery_logfile,"Failed to send request: managerAddress is NULL\n");
+        fprintf(discovery_logfile,"Failed to send request: getParticipantAddress(manager) is NULL\n");
         return -1;
     }
     socklen_t len = sizeof(struct sockaddr_in);
@@ -252,12 +242,12 @@ int sendExitRequest(Participant *manager)
     do
     {
         fprintf(discovery_logfile,"Sending EXIT Request try(%d)\n",tries);
-        send_ret =sendto(MySocket, send_packaged, sizeof(discovery_package), 0,(struct sockaddr *) managerAddress, sizeof(struct sockaddr));
+        send_ret =sendto(MySocket, send_packaged, sizeof(discovery_package), 0,(struct sockaddr *) &managerAddress, sizeof(struct sockaddr));
         if (send_ret < 0) 
             fprintf(discovery_logfile,"ERROR sendto: %d \n",send_ret);
         else
         {
-            receive_ret = recvfrom(MySocket, &received_packaged, sizeof(discovery_package), 0, (struct sockaddr *) managerAddress, &len);
+            receive_ret = recvfrom(MySocket, &received_packaged, sizeof(discovery_package), 0, (struct sockaddr *) &managerAddress, &len);
         }
         
         tv.tv_usec = 0;

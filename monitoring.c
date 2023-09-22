@@ -153,10 +153,11 @@ void *monitorParticipant(void *arg)
     MonitorResponse response;
     int send_ret,receive_ret;
     fprintf(monitoring_logfile,"created monitorParticipant\n");
-    struct sockaddr_in *participantAddress = getParticipantAddress(monoration->participant,PORT_CLIENT_MON); //this will read only, so no risk
+    struct sockaddr_in participantAddress;
+    getParticipantAddress(monoration->participant,PORT_CLIENT_MON,&participantAddress); //this will read only, so no risk
     struct sockaddr_in responseAddress;
     socklen_t len = sizeof(responseAddress);
-    int threadPort = createSocketMon(max_port,participantAddress);
+    int threadPort = createSocketMon(max_port,&participantAddress);
     pthread_mutex_lock(&max_portMutex);    
     max_port++;
     pthread_mutex_unlock(&max_portMutex);
@@ -167,7 +168,7 @@ void *monitorParticipant(void *arg)
     while(1)
     {
         fprintf(monitoring_logfile,"Sending List_Participant to participant: %s list version : %d\n",monoration->participant->Hostname, request->list_version);
-        send_ret =sendto(threadPort, request, sizeof(List_Participant), 0,(struct sockaddr *) participantAddress, sizeof(struct sockaddr));
+        send_ret =sendto(threadPort, request, sizeof(List_Participant), 0,(struct sockaddr *) &participantAddress, sizeof(struct sockaddr));
         if (send_ret < 0)
         {
             fprintf(monitoring_logfile,"ERROR sendto List_Participant: %d \n",send_ret);

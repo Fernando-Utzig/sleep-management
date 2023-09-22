@@ -42,7 +42,7 @@ void *CallElection(void *arg)
     int is_new_manager = 0;
     Participant *self = getMyselfCopy();
     List_Participant *List=getParticipant_list();
-    struct sockaddr_in *participantAddress;
+    struct sockaddr_in participantAddress;
     socklen_t len = sizeof(struct sockaddr_in);
     int do_election;
     structElection receive;
@@ -79,9 +79,9 @@ void *CallElection(void *arg)
         if(List->list[i].id != -1 && List->list[i].id < self->id) {
             fprintf(election_logfile,"Sending to %d \n",List->list[i].id);
             fflush(election_logfile);
-            participantAddress = getParticipantAddress(&List->list[i],PORT_CLIENT_RECEIVE_ELECT);
-            send_ret =sendto(sockfd, &send, sizeof(List_Participant), 0,(struct sockaddr *) participantAddress, sizeof(struct sockaddr));
-            recv_ret =recvfrom(sockfd, &receive, sizeof(List_Participant), 0,(struct sockaddr *) participantAddress, &len);
+            getParticipantAddress(&List->list[i],PORT_CLIENT_RECEIVE_ELECT,&participantAddress);
+            send_ret =sendto(sockfd, &send, sizeof(List_Participant), 0,(struct sockaddr *) &participantAddress, sizeof(struct sockaddr));
+            recv_ret =recvfrom(sockfd, &receive, sizeof(List_Participant), 0,(struct sockaddr *) &participantAddress, &len);
             if (recv_ret > 0)
             {
                 responses++;
@@ -96,14 +96,14 @@ void *CallElection(void *arg)
         send.election_command=ELECTED;
         for (i=0; i<LIST_SIZE; i++) {
             if(List->list[i].id != -1) {
-                participantAddress = getParticipantAddress(&List->list[i],PORT_CLIENT_SEND_ELECTION);
-                send_ret =sendto(sockfd, &send, sizeof(List_Participant), 0,(struct sockaddr *) participantAddress, sizeof(struct sockaddr));
+                getParticipantAddress(&List->list[i],PORT_CLIENT_SEND_ELECTION,&participantAddress);
+                send_ret =sendto(sockfd, &send, sizeof(List_Participant), 0,(struct sockaddr *) &participantAddress, sizeof(struct sockaddr));
             }
         }
     }
     else
     {
-        recvfrom(sockfd, &receive, sizeof(List_Participant), 0,(struct sockaddr *) participantAddress, &len);
+        recvfrom(sockfd, &receive, sizeof(List_Participant), 0,(struct sockaddr *) &participantAddress, &len);
         
         fprintf(election_logfile,"Received ELECTED message (%d): %d\n",ELECTED,receive.election_command);
     }

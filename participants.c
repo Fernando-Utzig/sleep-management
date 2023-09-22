@@ -218,30 +218,7 @@ void copystring(char *dest,char *source,int lenght)
     }
     dest[lenght]='\0';
 }
-Participant *Create_Participant(char* Message,int message_lenght)
-{
-    fprintf(participant_logfile,"printa isso Create_Participant\n");
-    Participant* new_participant = (Participant *)malloc(sizeof( Participant));
-    char temp[Participant_Name_size];
-    int i =0;
-    int mac_index;
-    int ip_index;
-    int hostname_index;
-    new_participant->id=List.maxId;
-    List.maxId++;
-    mac_index = get_index(Message,message_lenght);
-    fprintf(participant_logfile,"i eh = %d a mensagem é = %s\n", mac_index,Message);
-    fprintf(participant_logfile,"mac_index=%d bate em %c\n",mac_index,Message[mac_index]);
-    copystring(new_participant->MAC,Message,mac_index);
-    hostname_index = get_index(&Message[mac_index+1],message_lenght-mac_index)+mac_index+1;
-    fprintf(participant_logfile,"ip_index=%d bate em %c\n",hostname_index,Message[hostname_index]);
-    copystring(new_participant->Hostname,&Message[mac_index+1],hostname_index - mac_index - 1);
-    ip_index = get_index(&Message[hostname_index+1],message_lenght-hostname_index);
-    copystring(new_participant->ip_address,&Message[hostname_index+1],ip_index);
-    new_participant->is_awaken=1;
-    printParticipant(new_participant);
-    return new_participant;
-}
+
 
 
 
@@ -540,7 +517,7 @@ void setMyselfActive()
     pthread_mutex_unlock(&myselfMutex);
 }
 
-struct sockaddr_in *getParticipantAddress(Participant *participant,int port)
+struct sockaddr_in *getParticipantAddress(Participant *participant,int port, struct sockaddr_in *serverAddr)
 {
     if(participant == NULL)
     {
@@ -552,7 +529,11 @@ struct sockaddr_in *getParticipantAddress(Participant *participant,int port)
         fprintf(participant_logfile,"Error on getting participant address, participant ip_address is null \n");
         return NULL;
     }
-    struct sockaddr_in *serverAddr = (struct sockaddr_in *) malloc(sizeof(struct sockaddr_in));
+    if(serverAddr == NULL)
+    {
+        fprintf(participant_logfile,"Error serverAddr is NULL \n");
+        return NULL;
+    }
     int worked = inet_aton(participant->ip_address,&serverAddr->sin_addr);
     fprintf(participant_logfile, "worked: %d", worked);
     fflush(participant_logfile);

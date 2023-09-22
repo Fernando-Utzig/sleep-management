@@ -78,7 +78,6 @@ void *interfaceThreadParticipant(void *arg) {
             raise(SIGUSR1);
         }
         fflush(stdin);
-    	}
     }
 }
 
